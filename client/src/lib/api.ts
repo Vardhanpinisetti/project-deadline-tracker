@@ -1,6 +1,7 @@
 import { ApiErrorResponse, CreateProjectDTO, Project, ProjectStatus, ValidationErrorDetail } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Use relative URLs ("/api/projects") by default; only use VITE_API_URL if it is set
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export class ApiError extends Error {
   public status: number;
@@ -37,11 +38,9 @@ export const api = {
    * Optional ?status=active|completed|on_hold
    */
   async getProjects(status?: ProjectStatus): Promise<Project[]> {
-    const url = new URL(`${API_BASE_URL}/api/projects`);
-    if (status) {
-      url.searchParams.set('status', status);
-    }
-    const res = await fetch(url.toString(), {
+    const baseEndpoint = `${API_BASE_URL}/api/projects`;
+    const queryString = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`${baseEndpoint}${queryString}`, {
       headers: {
         Accept: 'application/json',
       },

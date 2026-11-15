@@ -6,12 +6,26 @@ import { errorHandler } from './middleware/errorHandler.js';
 export function createApp(): Express {
   const app = express();
 
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+  // Support comma-separated CLIENT_ORIGIN list; default to both port 5173 and 5174
+  const envOrigins = (process.env.CLIENT_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const defaultOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+  const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 
   // Security & Middleware
   app.use(
     cors({
-      origin: clientOrigin,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, Supertest, same-origin/proxy)
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(null, false);
+        }
+      },
       credentials: true,
     })
   );

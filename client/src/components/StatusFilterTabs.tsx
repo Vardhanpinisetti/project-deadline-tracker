@@ -41,7 +41,7 @@ export const StatusFilterTabs: React.FC<StatusFilterTabsProps> = ({
               onClick={() => onFilterChange(tab.key)}
               className={`relative flex items-center gap-2 px-3.5 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0 ${
                 isActive
-                  ? 'bg-accent-gradient text-[#05060B] shadow-solar-glow'
+                  ? 'solar-pill-active shadow-solar-glow'
                   : 'text-muted hover:text-[#FFF6EA] hover:bg-white/[0.04]'
               }`}
             >

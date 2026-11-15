@@ -117,14 +117,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         </div>
 
-        {/* Thin progress bar */}
-        <div className="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
+        {/* Progress bar: 7px height, background rgba(255,255,255,.07), fill linear-gradient or #FF4D5E */}
+        <div className="solar-progress-bar w-full">
           <div
-            className={`h-full rounded-full transition-all duration-200 ease-out ${
-              overBudget
-                ? 'bg-alert-red'
-                : 'bg-accent-gradient'
-            }`}
+            className={`solar-progress-fill ${overBudget ? 'over-budget' : ''}`}
             style={{ width: `${usagePercent}%` }}
             role="progressbar"
             aria-valuenow={usagePercent}

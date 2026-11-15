@@ -29,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-accent-gradient text-[#05060B] shadow-solar-glow hover:-translate-y-0.5 active:translate-y-0 active:brightness-95',
+      'solar-btn-primary',
     secondary:
       'bg-[rgba(24,18,12,0.6)] text-[#FFF6EA] border border-[rgba(255,180,84,0.22)] hover:border-[rgba(255,180,84,0.45)] hover:bg-[rgba(24,18,12,0.8)] active:brightness-95',
     ghost:

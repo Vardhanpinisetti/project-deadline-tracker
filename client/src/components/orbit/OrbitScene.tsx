@@ -22,94 +22,117 @@ function checkWebGL(): boolean {
   }
 }
 
+interface PlanetEntry {
+  id: number;
+  pivot: THREE.Group;
+  mesh: THREE.Mesh;
+  speed: number;
+  status: string;
+  isOver: boolean;
+  currentScale: number;
+}
+
 export const OrbitScene: React.FC<OrbitSceneProps> = ({
   projects,
   statusFilter,
   hoveredProjectId,
   reduceEffects = false,
 }) => {
-  const mountRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [webGLSupported] = useState<boolean>(() => checkWebGL());
 
-  // Store refs to interactive objects for animation frames
-  const sceneObjectsRef = useRef<{
-    planets: {
-      id: number;
-      mesh: THREE.Mesh;
-      baseRadius: number;
-      orbitRadius: number;
-      angle: number;
-      speed: number;
-      status: string;
-      isOver: boolean;
-      scale: number;
-    }[];
-    systemGroup: THREE.Group;
-    camera: THREE.PerspectiveCamera;
-    mouseTarget: { x: number; y: number };
+  // Store interactive three refs across renders
+  const stateRef = useRef<{
+    renderer: THREE.WebGLRenderer | null;
+    scene: THREE.Scene | null;
+    camera: THREE.PerspectiveCamera | null;
+    group: THREE.Group | null;
+    planets: PlanetEntry[];
+    rings: THREE.Mesh[];
+    disposables: { dispose: () => void }[];
+    mouse: { x: number; y: number };
+    animId: number | null;
   }>({
+    renderer: null,
+    scene: null,
+    camera: null,
+    group: null,
     planets: [],
-    systemGroup: new THREE.Group(),
-    camera: new THREE.PerspectiveCamera(),
-    mouseTarget: { x: 0, y: 0 },
+    rings: [],
+    disposables: [],
+    mouse: { x: 0, y: 0 },
+    animId: null,
   });
 
+  // Mount Scene & WebGLRenderer once
   useEffect(() => {
-    if (!webGLSupported || !mountRef.current) return;
+    if (!webGLSupported || !canvasRef.current) return;
 
-    const container = mountRef.current;
-    const width = container.clientWidth || window.innerWidth;
-    const height = container.clientHeight || window.innerHeight;
+    const canvas = canvasRef.current;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     // 1. Scene & Camera
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0, 9);
-    sceneObjectsRef.current.camera = camera;
 
-    // 2. Renderer (transparent, pixelRatio capped at 2)
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x000000, 0); // Transparent so CSS background glow shows through
-    container.appendChild(renderer.domElement);
+    // 2. Renderer
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0);
+    } catch {
+      return;
+    }
 
     // 3. Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 1.2, 50);
-    pointLight.position.set(5, 6, 8);
-    scene.add(pointLight);
+    const pointLight1 = new THREE.PointLight(0xffffff, 1.2, 60);
+    pointLight1.position.set(5, 6, 8);
+    scene.add(pointLight1);
 
-    // 4. Central System Group
-    const systemGroup = new THREE.Group();
-    systemGroup.rotation.x = 0.5; // Tilted angle
-    // Above 900px width position at x=3.1; below 900px center at x=0
-    systemGroup.position.x = width > 900 ? 3.1 : 0;
-    scene.add(systemGroup);
-    sceneObjectsRef.current.systemGroup = systemGroup;
+    const pointLight2 = new THREE.PointLight(0xffb454, 0.8, 60);
+    pointLight2.position.set(-6, -3, 5);
+    scene.add(pointLight2);
 
-    // 5. Sun & Sun Halo
-    const sunGeom = new THREE.SphereGeometry(0.75, 32, 32);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc060 });
+    // 4. Main Orbit Group (Tilt 0.5, desktop offset x=3.1)
+    const group = new THREE.Group();
+    group.rotation.x = 0.5;
+    group.position.x = width > 900 ? 3.1 : 0;
+    scene.add(group);
+
+    // 5. Sun & Halo
+    // Sun: radius 0.75, color #FF9E2C, emissive #FF7A59, roughness 0.2
+    const sunGeom = new THREE.SphereGeometry(0.75, 40, 40);
+    const sunMat = new THREE.MeshStandardMaterial({
+      color: 0xff9e2c,
+      emissive: 0xff7a59,
+      emissiveIntensity: 0.6,
+      roughness: 0.2,
+    });
     const sunMesh = new THREE.Mesh(sunGeom, sunMat);
-    systemGroup.add(sunMesh);
+    group.add(sunMesh);
 
-    const haloGeom = new THREE.SphereGeometry(1.05, 32, 32);
+    // Halo: radius 1.05, MeshBasicMaterial, color #FFB454, transparent, opacity 0.14
+    const haloGeom = new THREE.SphereGeometry(1.05, 40, 40);
     const haloMat = new THREE.MeshBasicMaterial({
-      color: 0xffc060,
+      color: 0xffb454,
       transparent: true,
       opacity: 0.14,
     });
     const haloMesh = new THREE.Mesh(haloGeom, haloMat);
-    systemGroup.add(haloMesh);
+    group.add(haloMesh);
 
-    // 6. Track all disposable resources
     const disposables: { dispose: () => void }[] = [
       sunGeom,
       sunMat,
@@ -117,167 +140,157 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
       haloMat,
     ];
 
-    // 7. Mouse cursor listener for smooth camera easing
+    stateRef.current = {
+      renderer,
+      scene,
+      camera,
+      group,
+      planets: [],
+      rings: [],
+      disposables,
+      mouse: { x: 0, y: 0 },
+      animId: null,
+    };
+
+    // Mouse movement listener
     const handleMouseMove = (e: MouseEvent) => {
-      const normalizedX = (e.clientX / window.innerWidth) * 2 - 1;
-      const normalizedY = -(e.clientY / window.innerHeight) * 2 + 1;
-      sceneObjectsRef.current.mouseTarget = {
-        x: normalizedX * 2,
-        y: -normalizedY * 1.4,
+      stateRef.current.mouse = {
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: -(e.clientY / window.innerHeight) * 2 + 1,
       };
     };
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
-    // 8. Resize Listener
+    // Resize listener
     const handleResize = () => {
-      if (!container) return;
-      const newW = container.clientWidth || window.innerWidth;
-      const newH = container.clientHeight || window.innerHeight;
-      camera.aspect = newW / newH;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(newW, newH);
-      systemGroup.position.x = newW > 900 ? 3.1 : 0;
+      renderer.setSize(w, h);
+      group.position.x = w > 900 ? 3.1 : 0;
     };
     window.addEventListener('resize', handleResize);
 
-    // 9. Animation Loop with Tab Visibility Pause
-    let animationFrameId: number;
-    let isTabVisible = document.visibilityState === 'visible';
-
-    const handleVisibilityChange = () => {
-      isTabVisible = document.visibilityState === 'visible';
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-
-      if (!isTabVisible) return;
-
-      // Camera easing toward cursor target
-      const { mouseTarget } = sceneObjectsRef.current;
-      camera.position.x += (mouseTarget.x - camera.position.x) * 0.04;
-      camera.position.y += (mouseTarget.y - camera.position.y) * 0.04;
-      camera.lookAt(0, 0, 0);
-
-      // Rotate and animate planets if not reduced motion
-      const speedMultiplier = reduceEffects ? 0 : 1;
-
-      for (const p of sceneObjectsRef.current.planets) {
-        p.angle += p.speed * speedMultiplier;
-        p.mesh.position.x = Math.cos(p.angle) * p.orbitRadius;
-        p.mesh.position.z = Math.sin(p.angle) * p.orbitRadius;
-
-        // Smooth scale easing when hovered
-        const targetScale = hoveredProjectId === p.id ? 1.5 : 1.0;
-        p.scale += (targetScale - p.scale) * 0.1;
-        p.mesh.scale.set(p.scale, p.scale, p.scale);
-      }
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    // Cleanup on unmount
     return () => {
-      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+      if (stateRef.current.animId !== null) {
+        cancelAnimationFrame(stateRef.current.animId);
+        stateRef.current.animId = null;
+      }
 
       for (const d of disposables) {
         d.dispose();
       }
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      for (const p of stateRef.current.planets) {
+        p.mesh.geometry.dispose();
+        (p.mesh.material as THREE.Material).dispose();
       }
+      for (const r of stateRef.current.rings) {
+        r.geometry.dispose();
+        (r.material as THREE.Material).dispose();
+      }
+
+      renderer.dispose();
+      stateRef.current.renderer = null;
+      stateRef.current.scene = null;
+      stateRef.current.camera = null;
+      stateRef.current.group = null;
+      stateRef.current.planets = [];
+      stateRef.current.rings = [];
     };
-  }, [webGLSupported, reduceEffects]);
+  }, [webGLSupported]);
 
-  // Update planets whenever `projects` changes
+  // Update Orbits & Planets when `projects` changes
   useEffect(() => {
-    const { systemGroup } = sceneObjectsRef.current;
-    if (!systemGroup) return;
+    const { group } = stateRef.current;
+    if (!group) return;
 
-    // Remove existing planets and rings from group
-    for (const p of sceneObjectsRef.current.planets) {
-      systemGroup.remove(p.mesh);
+    // Clear old planets and rings
+    for (const p of stateRef.current.planets) {
+      group.remove(p.pivot);
+      p.mesh.geometry.dispose();
+      (p.mesh.material as THREE.Material).dispose();
     }
-    // Remove old rings
-    const ringsToRemove = systemGroup.children.filter((child) => child.name === 'orbitRing');
-    for (const ring of ringsToRemove) {
-      systemGroup.remove(ring);
+    for (const r of stateRef.current.rings) {
+      group.remove(r);
+      r.geometry.dispose();
+      (r.material as THREE.Material).dispose();
     }
 
-    const newPlanets: typeof sceneObjectsRef.current.planets = [];
+    const newPlanets: PlanetEntry[] = [];
+    const newRings: THREE.Mesh[] = [];
 
+    // Up to projects count (radii 1.8, 2.5, 3.2, 3.9, 4.6...)
     projects.forEach((proj, i) => {
-      const orbitRadius = 1.6 + i * 0.65;
-      const planetRadius = 0.12 + (proj.budget / 180000) * 0.3;
+      const orbitRadius = 1.8 + i * 0.7;
+      const planetSize = 0.12 + (proj.budget / 180000) * 0.3;
       const overBudget = isOverBudget(proj);
 
-      // Status color palette: active #35D49A, completed #5B93FF, on_hold #E8C14A, over budget #FF4D5E
-      let hexColor = 0x35d49a;
+      // Color scheme:
+      // Project over-budget: red #FF4D5E
+      // Completed: green #46E3B7
+      // On-hold: amber #E5A93C
+      // Active: gold #FFB454
+      let color = 0xffb454;
       if (overBudget) {
-        hexColor = 0xff4d5e;
+        color = 0xff4d5e;
       } else if (proj.status === 'completed') {
-        hexColor = 0x5b93ff;
+        color = 0x46e3b7;
       } else if (proj.status === 'on_hold') {
-        hexColor = 0xe8c14a;
+        color = 0xe5a93c;
       }
 
-      // Planet Mesh
-      const geom = new THREE.SphereGeometry(planetRadius, 24, 24);
-      const mat = new THREE.MeshStandardMaterial({
-        color: hexColor,
-        emissive: hexColor,
-        emissiveIntensity: 0.3,
-        roughness: 0.4,
-        metalness: 0.15,
-        transparent: true,
-        opacity: 1.0,
-      });
-
-      const mesh = new THREE.Mesh(geom, mat);
-      const startAngle = i * 1.3;
-      mesh.position.x = Math.cos(startAngle) * orbitRadius;
-      mesh.position.z = Math.sin(startAngle) * orbitRadius;
-      systemGroup.add(mesh);
-
-      // Orbit Ring (flat ring)
-      const ringGeom = new THREE.RingGeometry(orbitRadius - 0.008, orbitRadius + 0.008, 64);
+      // Orbit ring: concentric thin ring, color #FFB454, opacity 0.22
+      const ringGeom = new THREE.RingGeometry(orbitRadius - 0.008, orbitRadius + 0.008, 120);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: 0xffb454,
         transparent: true,
-        opacity: 0.14,
+        opacity: 0.22,
         side: THREE.DoubleSide,
       });
       const ringMesh = new THREE.Mesh(ringGeom, ringMat);
       ringMesh.rotation.x = Math.PI / 2;
-      ringMesh.name = 'orbitRing';
-      systemGroup.add(ringMesh);
+      group.add(ringMesh);
+      newRings.push(ringMesh);
+
+      // Planet pivot
+      const pivot = new THREE.Group();
+      pivot.rotation.y = i * 1.3;
+
+      const planetGeom = new THREE.SphereGeometry(planetSize, 32, 32);
+      const planetMat = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.35,
+        metalness: 0.2,
+        transparent: true,
+        opacity: 1.0,
+      });
+      const planetMesh = new THREE.Mesh(planetGeom, planetMat);
+      planetMesh.position.x = orbitRadius;
+      pivot.add(planetMesh);
+      group.add(pivot);
 
       newPlanets.push({
         id: proj.id,
-        mesh,
-        baseRadius: planetRadius,
-        orbitRadius,
-        angle: startAngle,
+        pivot,
+        mesh: planetMesh,
         speed: 0.012 / (1 + i * 0.45),
         status: proj.status,
         isOver: overBudget,
-        scale: 1.0,
+        currentScale: 1.0,
       });
     });
 
-    sceneObjectsRef.current.planets = newPlanets;
+    stateRef.current.planets = newPlanets;
+    stateRef.current.rings = newRings;
   }, [projects]);
 
-  // Handle status filter opacity dimming: non-matching planets fade to 25% opacity
+  // Handle statusFilter dimming
   useEffect(() => {
-    for (const p of sceneObjectsRef.current.planets) {
+    for (const p of stateRef.current.planets) {
       const isMatching = statusFilter === 'all' || p.status === statusFilter;
       const mat = p.mesh.material as THREE.MeshStandardMaterial;
       if (mat) {
@@ -286,41 +299,98 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
     }
   }, [statusFilter]);
 
+  // Animation Loop: Pause and drop CPU to 0% when reduceEffects is true
+  useEffect(() => {
+    if (!webGLSupported || reduceEffects) {
+      if (stateRef.current.animId !== null) {
+        cancelAnimationFrame(stateRef.current.animId);
+        stateRef.current.animId = null;
+      }
+      return;
+    }
+
+    let isVisible = document.visibilityState === 'visible';
+    const handleVisibility = () => {
+      isVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    const loop = () => {
+      stateRef.current.animId = requestAnimationFrame(loop);
+
+      if (!isVisible) return;
+
+      const { renderer, scene, camera, planets, mouse } = stateRef.current;
+      if (!renderer || !scene || !camera) return;
+
+      // Camera easing toward cursor target
+      camera.position.x += (mouse.x * 2 - camera.position.x) * 0.04;
+      camera.position.y += (-mouse.y * 1.4 - camera.position.y) * 0.04;
+      camera.lookAt(0, 0, 0);
+
+      // Rotate planet pivots
+      for (const p of planets) {
+        p.pivot.rotation.y += p.speed;
+
+        // Smooth scale easing on hover
+        const targetScale = hoveredProjectId === p.id ? 1.5 : 1.0;
+        p.currentScale += (targetScale - p.currentScale) * 0.1;
+        p.mesh.scale.set(p.currentScale, p.currentScale, p.currentScale);
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    loop();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (stateRef.current.animId !== null) {
+        cancelAnimationFrame(stateRef.current.animId);
+        stateRef.current.animId = null;
+      }
+    };
+  }, [webGLSupported, reduceEffects, hoveredProjectId]);
+
   if (!webGLSupported) {
     return null;
   }
 
   return (
     <>
-      {/* 3D Canvas Container */}
-      <div
-        ref={mountRef}
+      {/* WebGL Canvas (owned directly by React, hidden when reduced effects) */}
+      <canvas
+        ref={canvasRef}
+        id="gl"
         aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ display: reduceEffects ? 'none' : 'block' }}
+        className="fixed inset-0 w-full h-full pointer-events-none z-0"
       />
 
-      {/* Legend bottom-right (hidden below 900px width) */}
-      <div className="hidden min-[900px]:flex fixed bottom-6 right-6 z-20 solar-glass px-4 py-3 rounded-2xl flex-col gap-2 text-xs shadow-solar-card pointer-events-auto">
-        <span className="font-semibold text-[#FFF6EA] flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-solar-sun" />
-          <span>Planet size = budget</span>
+      {/* Legend: small, clean glass card at bottom-right (fixed, desktop only, hidden below 900px) */}
+      <div
+        className="hidden min-[900px]:flex fixed bottom-6 right-6 z-20 solar-glass px-4 py-3 rounded-[16px] flex-col gap-2 text-xs shadow-solar-card pointer-events-auto"
+        aria-label="3D Orbit Scene Legend"
+      >
+        <span className="text-[11px] font-semibold tracking-wider text-[#FFF6EA] uppercase">
+          3D SCENE · LIVE
         </span>
-        <div className="flex items-center gap-3 text-[11px] text-muted">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#35D49A]" />
+        <div className="flex items-center gap-3.5 text-[11px] text-[#B6A78F]">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#FFB454]" />
             <span>Active</span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#5B93FF]" />
-            <span>Completed</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#FF6B6B]" />
+            <span>Overdue</span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#E8C14A]" />
-            <span>On hold</span>
-          </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#FF4D5E]" />
             <span>Over budget</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#46E3B7]" />
+            <span>Completed</span>
           </span>
         </div>
       </div>

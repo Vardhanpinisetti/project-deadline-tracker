@@ -4,14 +4,15 @@
 
 @layer base {
   body {
-    background-color: #05060B;
+    background: radial-gradient(900px 600px at 78% 45%, rgba(255, 180, 84, 0.22), transparent), #05060B;
     color: #FFF6EA;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
     overflow-x: hidden;
   }
 }
 
-/* Solar Gold radial glow background */
+/* Solar Gold radial glow background utility */
 .bg-solar-glow {
   background-image: radial-gradient(900px 600px at 78% 45%, rgba(255, 180, 84, 0.22), transparent);
 }
@@ -26,13 +27,68 @@
   border-radius: 18px;
 }
 
+/* Stacked card warm hover effect */
 .solar-glass-hover {
-  transition: transform 180ms ease-out, border-color 180ms ease-out;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .solar-glass-hover:hover {
   border-color: rgba(255, 180, 84, 0.45);
   transform: translateX(6px);
+}
+
+/* Brand gradient dot */
+.solar-brand-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #FF7A59, #FFB454);
+  display: inline-block;
+  box-shadow: 0 0 12px rgba(255, 122, 89, 0.6);
+}
+
+/* Primary Button & Active Pill Solar Gold Gradient */
+.solar-btn-primary {
+  background: linear-gradient(135deg, #FFB454 0%, #FF7A59 100%) !important;
+  color: #05060B !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 28px rgba(255, 180, 84, 0.4);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.solar-btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.solar-btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.solar-pill-active {
+  background: linear-gradient(135deg, #FFB454 0%, #FF7A59 100%) !important;
+  color: #05060B !important;
+  font-weight: 600 !important;
+}
+
+/* Progress bar: 7px height, rgba(255,255,255,.07) background, gradient or red fill */
+.solar-progress-bar {
+  height: 7px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.solar-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #FFB454, #FF7A59);
+  transition: width 0.2s ease-out;
+}
+
+.solar-progress-fill.over-budget {
+  background: #FF4D5E !important;
 }
 
 /* Subtle scrollbar */
