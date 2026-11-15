@@ -40,18 +40,24 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   return (
-    <div
+    <article
+      aria-labelledby={`project-title-${project.id}`}
       onMouseEnter={() => onHover?.(project.id)}
       onMouseLeave={() => onHover?.(null)}
-      className="solar-glass solar-glass-hover p-5 space-y-4 rounded-[18px]"
+      className="solar-glass solar-glass-hover p-4 sm:p-5 space-y-4 rounded-[18px]"
     >
       {/* Top Header: Title & Badges */}
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold text-[#FFF6EA] tracking-tight">
+          <h3
+            id={`project-title-${project.id}`}
+            className="text-base font-semibold text-[#FFF6EA] tracking-tight break-words"
+          >
             {project.title}
           </h3>
-          <StatusBadge status={project.status} size="sm" />
+          <div className="shrink-0">
+            <StatusBadge status={project.status} size="sm" />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -65,7 +71,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       </div>
 
-      {/* Deadline: Overdue deadline text is red and bold */}
+      {/* Deadline */}
       <div className="flex items-center gap-2 text-xs">
         {project.deadline ? (
           <>
@@ -111,7 +117,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         </div>
 
-        {/* Thin progress bar: accent gradient; solid red when over budget; width capped at 100% */}
+        {/* Thin progress bar */}
         <div className="w-full h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-200 ease-out ${
@@ -129,7 +135,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       </div>
 
-      {/* Inline status selector (touch target >= 44px) */}
+      {/* Inline status selector */}
       <div className="flex items-center justify-between pt-2 border-t border-[rgba(255,180,84,0.12)] text-xs text-muted">
         <span>Status:</span>
         <div className="relative inline-flex items-center gap-2">
@@ -148,6 +154,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
         </div>
       </div>
-    </div>
+    </article>
   );
 };
