@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { StatCard } from '../components/StatCard';
 import { StatusFilterTabs } from '../components/StatusFilterTabs';
@@ -8,6 +8,7 @@ import { CardSkeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ToastContainer, ToastMessage } from '../components/Toast';
 import { Button } from '../components/Button';
+import { OrbitErrorBoundary } from '../components/orbit/ErrorBoundary';
 import {
   FolderKanban,
   CheckCircle2,
@@ -15,14 +16,14 @@ import {
   AlertTriangle,
   Plus,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { CreateProjectDTO, ProjectStatus } from '../types';
 
-interface ProjectsPageProps {
-  onHoverProject?: (id: number | null) => void;
-}
+// Lazy-load 3D Orbit Scene so it never blocks the initial bundle or core app
+const OrbitScene = lazy(() => import('../components/orbit/OrbitScene'));
 
-export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) => {
+export const ProjectsPage: React.FC = () => {
   const {
     projects,
     loading,
@@ -38,6 +39,10 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) =>
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [hoveredProjectId, setHoveredProjectId] = useState<number | null>(null);
+  const [reduceEffects, setReduceEffects] = useState<boolean>(() => {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
 
   const addToast = (type: 'success' | 'error', message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
@@ -64,22 +69,44 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) =>
   };
 
   return (
-    <div className="relative min-h-screen bg-[#05060B] bg-solar-glow text-[#FFF6EA] pb-24">
-      {/* Container: Left content column (max-width 700px) */}
-      <div className="max-w-[700px] mx-auto px-4 sm:px-6 pt-8 sm:pt-12 space-y-8">
+    <div className="relative min-h-screen bg-[#05060B] bg-solar-glow text-[#FFF6EA] pb-24 overflow-x-hidden">
+      {/* 3D Orbit Scene (Rendered fixed in the background, lazy loaded + Error Boundary) */}
+      <OrbitErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <OrbitScene
+            projects={projects}
+            statusFilter={statusFilter}
+            hoveredProjectId={hoveredProjectId}
+            reduceEffects={reduceEffects}
+          />
+        </Suspense>
+      </OrbitErrorBoundary>
+
+      {/* Main Container: Left content column (max-width 700px) */}
+      <div className="relative z-10 max-w-[700px] mx-auto min-[900px]:ml-[max(2rem,calc(50vw-450px))] px-4 sm:px-6 pt-8 sm:pt-12 space-y-8">
         {/* Header */}
         <div className="space-y-4">
-          {/* Brand line: small round gradient brand dot + "EnvisionStudio" */}
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-gradient shadow-solar-glow" />
-            <span className="text-xs uppercase tracking-widest font-semibold text-muted">
-              EnvisionStudio
-            </span>
+          {/* Top Bar: Brand dot & name + Reduce Effects toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-accent-gradient shadow-solar-glow" />
+              <span className="text-xs uppercase tracking-widest font-semibold text-muted">
+                EnvisionStudio
+              </span>
+            </div>
+
+            <button
+              onClick={() => setReduceEffects(!reduceEffects)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full solar-glass text-muted hover:text-[#FFF6EA] transition-colors"
+              title="Toggle background 3D motion"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-accent" />
+              <span>{reduceEffects ? 'Effects: Static' : 'Effects: Live'}</span>
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              {/* H1 clamp(34px, 5vw, 56px) Space Grotesk 600 */}
               <h1 className="font-display font-semibold text-[34px] sm:text-[46px] lg:text-[54px] tracking-[-0.03em] leading-tight text-[#FFF6EA]">
                 Projects
               </h1>
@@ -110,7 +137,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) =>
           </div>
         </div>
 
-        {/* Four Stat Tiles (2x2 on mobile, 4 across on desktop) */}
+        {/* Four Stat Tiles */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <StatCard
             label="Total"
@@ -152,7 +179,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) =>
           </span>
         </div>
 
-        {/* Project List / State View */}
+        {/* Stacked Glass Project Cards / State View */}
         <div>
           {loading ? (
             <CardSkeleton />
@@ -187,14 +214,14 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onHoverProject }) =>
               onAddNew={() => setIsModalOpen(true)}
             />
           ) : (
-            /* Stacked Glass Cards */
+            /* Stacked Cards */
             <div className="space-y-4">
               {projects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
                   onStatusChange={handleStatusChange}
-                  onHover={onHoverProject}
+                  onHover={setHoveredProjectId}
                 />
               ))}
             </div>
