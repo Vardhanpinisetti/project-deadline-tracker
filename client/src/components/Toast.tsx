@@ -16,7 +16,7 @@ export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
@@ -41,17 +41,17 @@ const ToastItem: React.FC<{
   return (
     <div
       role="status"
-      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border border-border bg-bg-elevated/95 backdrop-blur-xl shadow-glass transition-all duration-150 ease-out animate-slide-in ${
+      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl solar-glass bg-[#0B1020]/95 shadow-solar-card transition-all duration-150 ease-out animate-slide-in ${
         isSuccess
-          ? 'border-l-4 border-l-success text-text-primary'
-          : 'border-l-4 border-l-danger text-text-primary'
+          ? 'border-l-4 border-l-[#35D49A] text-[#FFF6EA]'
+          : 'border-l-4 border-l-alert-red text-[#FFF6EA]'
       }`}
     >
       <div className="shrink-0 mt-0.5">
         {isSuccess ? (
-          <CheckCircle2 className="w-5 h-5 text-success" />
+          <CheckCircle2 className="w-5 h-5 text-[#35D49A]" />
         ) : (
-          <AlertTriangle className="w-5 h-5 text-danger" />
+          <AlertTriangle className="w-5 h-5 text-alert-red" />
         )}
       </div>
 
@@ -61,7 +61,7 @@ const ToastItem: React.FC<{
 
       <button
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 p-1 text-text-muted hover:text-text-primary rounded-lg hover:bg-surface transition-colors"
+        className="shrink-0 p-1 text-muted hover:text-[#FFF6EA] rounded-lg hover:bg-white/[0.06] transition-colors"
         aria-label="Dismiss notification"
       >
         <X className="w-4 h-4" />
