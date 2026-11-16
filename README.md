@@ -94,4 +94,15 @@ function isOverdue(project) {
 
 ## 6. AI Usage
 
-I used AI assistance (Antigravity with Gemini and Claude) for rapid monorepo scaffolding, boilerplate generation, and Three.js orbit scene geometry setups; I manually reviewed and verified all date-only timezone comparisons, budget limit edge cases, Zod schemas, SQL prepared statements, and test suites across all endpoints. [Personal note: insert any personal reflection or workflow details here].
+I used AI assistance (Antigravity with Gemini and Claude) for rapid monorepo scaffolding, boilerplate generation, and Three.js orbit scene geometry setups; I manually reviewed and verified all date-only timezone comparisons, budget limit edge cases, Zod schemas, SQL prepared statements, and test suites across all endpoints.
+
+---
+
+## 7. Cinematic Scroll Architecture
+
+- **Scaling System (`--u`)**: Computes a dynamic viewport unit (`1u = clientWidth / 1440` on >820px, `clientWidth / 390` on <=820px) keeping design proportions consistent across desktop and mobile screens.
+- **Fixed SceneStack**: 4 full-viewport background layers (Day plate with radial glow fallback, Ember gradient, Night plate with procedural stars, and WebGL Three.js Orbit canvas) seamlessly crossfading via scroll progress.
+- **5-Pose Orbit Choreography**: Three.js planetary orbit glides between 5 key poses across sections (`hero`, `overview`, `projects`, `orbit`, `end`) using smooth `easeInOutCubic` interpolation, scroll velocity acceleration, and subtle pointer parallax.
+- **Hero Ripple Lens**: WebGL 1 shader pipeline with chromatic aberration and pointer presence easing, with graceful fallback to day plate when media is omitted.
+- **Accessibility & Performance**: Full support for `prefers-reduced-motion` and a persistent "Reduce effects" toggle that disables WebGL loops and snaps animations to static readable states. All core tracker functions (CRUD, validation, filters, optimistic updates) remain 100% accessible.
+
