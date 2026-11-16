@@ -13,6 +13,9 @@ vite.config.js
 data/*.db
 data/*.db-wal
 data/*.db-shm
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
 *.db
 *.db-wal
 *.db-shm
