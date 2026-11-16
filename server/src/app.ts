@@ -1,5 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import projectsRouter from './routes/projects.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -33,6 +35,26 @@ export function createApp(): Express {
 
   // API Routes
   app.use('/api/projects', projectsRouter);
+
+  // Serve static client assets in production if built
+  const possibleDistPaths = [
+    path.resolve(process.cwd(), '../client/dist'),
+    path.resolve(process.cwd(), 'client/dist'),
+    path.resolve(process.cwd(), '../dist'),
+    path.resolve(process.cwd(), 'dist'),
+  ];
+
+  const clientDistPath = possibleDistPaths.find((p) => fs.existsSync(p));
+
+  if (clientDistPath) {
+    app.use(express.static(clientDistPath));
+    app.get('*', (req: Request, res: Response, next) => {
+      if (req.path.startsWith('/api')) {
+        return next();
+      }
+      res.sendFile(path.join(clientDistPath, 'index.html'));
+    });
+  }
 
   // Unmatched route handler
   app.use((_req: Request, res: Response) => {
