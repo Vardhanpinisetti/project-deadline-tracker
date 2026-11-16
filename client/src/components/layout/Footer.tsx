@@ -92,27 +92,44 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
           ©2026 EnvisionStudio · Project Deadline Tracker
         </p>
 
-        {/* Huge Ghost Wordmark "EnvisionStudio" (clamp(56px, 15.5vw, 236px), white-space nowrap, text-align center, line-height .8, overflow hidden on wrapper, centred, no horizontal scroll) */}
+        {/* Inline SVG Ghost Wordmark: scales to its container so the word can never be clipped */}
         <div
-          aria-hidden="true"
-          className="w-full flex justify-center pointer-events-none text-center"
-          style={{ overflow: 'hidden' }}
+          style={{
+            padding: '0 16px',
+            marginTop: '26px',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            width: '100%',
+          }}
         >
-          <span
-            className="font-light tracking-[-0.05em] block select-none pointer-events-none"
-            style={{
-              fontSize: 'clamp(56px, 15.5vw, 236px)',
-              whiteSpace: 'nowrap',
-              textAlign: 'center',
-              lineHeight: 0.8,
-              background:
-                'linear-gradient(180deg, rgba(255,200,140,0.22) 0%, rgba(255,200,140,0) 85%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
+          <svg
+            viewBox="0 0 1000 150"
+            width="100%"
+            preserveAspectRatio="xMidYMid meet"
+            aria-hidden="true"
+            role="presentation"
+            style={{ display: 'block', overflow: 'visible' }}
           >
-            EnvisionStudio
-          </span>
+            <defs>
+              <linearGradient id="wm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="rgb(255,200,140)" stopOpacity=".22" />
+                <stop offset=".85" stopColor="rgb(255,200,140)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <text
+              x="500"
+              y="125"
+              textAnchor="middle"
+              textLength="940"
+              lengthAdjust="spacingAndGlyphs"
+              fontFamily="'Inter Tight', system-ui, sans-serif"
+              fontWeight="300"
+              fontSize="150"
+              fill="url(#wm)"
+            >
+              EnvisionStudio
+            </text>
+          </svg>
         </div>
       </div>
     </footer>
