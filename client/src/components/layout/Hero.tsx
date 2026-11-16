@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { ArrowDown } from 'lucide-react';
+import { RippleLens } from '../scene/RippleLens';
 
 interface HeroProps {
   onOpenModal: () => void;
@@ -8,6 +9,19 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onOpenModal, reduceEffects = false }) => {
   const heroRef = useRef<HTMLElement>(null);
+  const rippleCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Initialize RippleLens if media is available
+  useEffect(() => {
+    if (!rippleCanvasRef.current) return;
+    const lens = new RippleLens(rippleCanvasRef.current, {
+      videoSrc: '/media/hero-loop.mp4',
+      reduceEffects,
+    });
+    return () => {
+      lens.destroy();
+    };
+  }, [reduceEffects]);
 
   const scrollTo = (id: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -122,6 +136,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenModal, reduceEffects = false }
       ref={heroRef}
       className="relative w-full h-[100vh] min-h-[100svh] min-[821px]:min-h-[calc(900*var(--u,1px))] overflow-hidden select-none"
     >
+      {/* Ripple Lens Canvas (active when hero-loop.mp4 is available) */}
+      <canvas
+        ref={rippleCanvasRef}
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full pointer-events-none z-0"
+        style={{ display: reduceEffects ? 'none' : 'block' }}
+      />
       {/* Desktop (min-width: 821px) 1440x900 scaled frame */}
       <div className="hidden min-[821px]:block absolute inset-0 w-full h-full pointer-events-none">
         {/* Headline at left 67u, top 526u */}
