@@ -132,5 +132,5 @@ function isOverdue(project) {
 
 Spent amount equal to budget is within budget (budget fully used, not exceeded).
 
----
+
 
