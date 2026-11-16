@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isOverdue, isOverBudget, isBudgetFullyUsed } from './projectRules';
+import { isOverdue, isOverBudget, isBudgetFullyUsed, getProjectStatusColor } from './projectRules';
 
 describe('Frontend Business Rules', () => {
   describe('isOverdue', () => {
@@ -55,6 +55,26 @@ describe('Frontend Business Rules', () => {
     it('returns false when spentAmount is less than budget', () => {
       expect(isOverBudget({ budget: 120000, spentAmount: 45000 })).toBe(false);
       expect(isOverBudget({ budget: 90000, spentAmount: 12000 })).toBe(false);
+    });
+  });
+
+  describe('getProjectStatusColor', () => {
+    it('returns vivid red #FF4D5E for any project that is over budget, overriding status', () => {
+      expect(getProjectStatusColor({ status: 'active', budget: 180000, spentAmount: 200000 })).toBe('#FF4D5E');
+      expect(getProjectStatusColor({ status: 'active', budget: 25000, spentAmount: 30000 })).toBe('#FF4D5E');
+      expect(getProjectStatusColor({ status: 'on_hold', budget: 50000, spentAmount: 60000 })).toBe('#FF4D5E');
+    });
+
+    it('returns #35D49A for within-budget active project', () => {
+      expect(getProjectStatusColor({ status: 'active', budget: 120000, spentAmount: 45000 })).toBe('#35D49A');
+    });
+
+    it('returns #5B93FF for completed project', () => {
+      expect(getProjectStatusColor({ status: 'completed', budget: 50000, spentAmount: 50000 })).toBe('#5B93FF');
+    });
+
+    it('returns #E8C14A for on-hold project', () => {
+      expect(getProjectStatusColor({ status: 'on_hold', budget: 90000, spentAmount: 12000 })).toBe('#E8C14A');
     });
   });
 });

@@ -10,6 +10,19 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #FFF6EA;
+  }
+}
+
+/* Card project title: explicitly 17px, font-weight 600, #FFF6EA with no overrides */
+.card-project-title {
+  color: #FFF6EA !important;
+  font-weight: 600 !important;
+  font-size: 17px !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.015em !important;
 }
 
 /* Solar Gold radial glow background utility */

@@ -88,7 +88,10 @@ export const ProjectsPage: React.FC = () => {
                 <span className="solar-brand-dot" aria-hidden="true" />
                 <span>EnvisionStudio</span>
               </div>
-              <h1 className="font-display font-semibold text-[34px] sm:text-[46px] lg:text-[54px] tracking-[-0.03em] leading-tight text-[#FFF6EA]">
+              <h1
+                style={{ color: '#FFF6EA' }}
+                className="font-display font-semibold text-[34px] sm:text-[46px] lg:text-[54px] tracking-[-0.03em] leading-tight text-[#FFF6EA]"
+              >
                 Projects
               </h1>
               <p className="mt-2 text-[15px] leading-relaxed text-[#B6A78F] max-w-[42ch]">
@@ -103,7 +106,7 @@ export const ProjectsPage: React.FC = () => {
               onClick={() => setIsModalOpen(true)}
               className="mb-1"
             >
-              + New project
+              New project
             </Button>
           </header>
 
@@ -123,8 +126,8 @@ export const ProjectsPage: React.FC = () => {
               onFilterChange={setStatusFilter}
             />
 
-            <span className="text-xs uppercase tracking-wider font-semibold text-muted">
-              Showing <strong className="text-[#FFF6EA] tabular-nums lowercase">{projects.length}</strong>{' '}
+            <span className="text-xs font-normal text-muted">
+              Showing <strong className="font-semibold text-[#FFF6EA] tabular-nums">{projects.length}</strong>{' '}
               {projects.length === 1 ? 'project' : 'projects'}
             </span>
           </div>
@@ -139,7 +142,7 @@ export const ProjectsPage: React.FC = () => {
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#FF4D5E]/15 text-alert-red mx-auto">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-semibold text-[#FFF6EA]">
+                <h3 className="text-base font-semibold text-[#FFF6EA]" style={{ color: '#FFF6EA' }}>
                   Failed to load projects
                 </h3>
                 <p className="text-sm text-muted max-w-sm mx-auto">
@@ -164,8 +167,8 @@ export const ProjectsPage: React.FC = () => {
                 onAddNew={() => setIsModalOpen(true)}
               />
             ) : (
-              /* Stacked Cards */
-              <div className="space-y-4">
+              /* Stacked Cards (10px gap between cards) */
+              <div className="space-y-2.5">
                 {projects.map((project) => (
                   <ProjectCard
                     key={project.id}

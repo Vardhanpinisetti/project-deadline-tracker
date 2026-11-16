@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Project, StatusFilter } from '../../types';
-import { isOverBudget } from '../../lib/projectRules';
+import { getProjectStatusColor } from '../../lib/projectRules';
 
 interface OrbitSceneProps {
   projects: Project[];
@@ -72,10 +72,10 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    // 1. Scene & Camera
+    // 1. Scene & Camera (PerspectiveCamera fov 45 at z=12)
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 9);
+    camera.position.set(0, 0, 12);
 
     // 2. Renderer
     let renderer: THREE.WebGLRenderer;
@@ -105,28 +105,23 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
     pointLight2.position.set(-6, -3, 5);
     scene.add(pointLight2);
 
-    // 4. Main Orbit Group (Tilt 0.5, desktop offset x=3.1)
+    // 4. Main Orbit Group (Tilt 0.5; x=2.6 on screens >1100px, 0 below)
     const group = new THREE.Group();
     group.rotation.x = 0.5;
-    group.position.x = width > 900 ? 3.1 : 0;
+    group.position.x = width > 1100 ? 2.6 : 0;
     scene.add(group);
 
     // 5. Sun & Halo
-    // Sun: radius 0.75, color #FF9E2C, emissive #FF7A59, roughness 0.2
-    const sunGeom = new THREE.SphereGeometry(0.75, 40, 40);
-    const sunMat = new THREE.MeshStandardMaterial({
-      color: 0xff9e2c,
-      emissive: 0xff7a59,
-      emissiveIntensity: 0.6,
-      roughness: 0.2,
-    });
+    // Sun: radius 0.7, color #FFC060 (MeshBasicMaterial)
+    const sunGeom = new THREE.SphereGeometry(0.7, 40, 40);
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc060 });
     const sunMesh = new THREE.Mesh(sunGeom, sunMat);
     group.add(sunMesh);
 
-    // Halo: radius 1.05, MeshBasicMaterial, color #FFB454, transparent, opacity 0.14
-    const haloGeom = new THREE.SphereGeometry(1.05, 40, 40);
+    // Halo: radius 0.95, MeshBasicMaterial, color #FFC060, transparent, opacity 0.14
+    const haloGeom = new THREE.SphereGeometry(0.95, 40, 40);
     const haloMat = new THREE.MeshBasicMaterial({
-      color: 0xffb454,
+      color: 0xffc060,
       transparent: true,
       opacity: 0.14,
     });
@@ -161,14 +156,14 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
     };
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
-    // Resize listener
+    // Resize listener (group position x=2.6 on >1100px)
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      group.position.x = w > 900 ? 3.1 : 0;
+      group.position.x = w > 1100 ? 2.6 : 0;
     };
     window.addEventListener('resize', handleResize);
 
@@ -223,25 +218,17 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
     const newPlanets: PlanetEntry[] = [];
     const newRings: THREE.Mesh[] = [];
 
-    // Up to projects count (radii 1.8, 2.5, 3.2, 3.9, 4.6...)
+    // Up to projects count:
+    // orbit radius = 1.5 + i*0.6;
+    // planet radius = 0.10 + (budget/180000)*0.22;
     projects.forEach((proj, i) => {
-      const orbitRadius = 1.8 + i * 0.7;
-      const planetSize = 0.12 + (proj.budget / 180000) * 0.3;
-      const overBudget = isOverBudget(proj);
+      const orbitRadius = 1.5 + i * 0.6;
+      const planetSize = 0.10 + (proj.budget / 180000) * 0.22;
 
-      // Color scheme:
-      // Project over-budget: red #FF4D5E
-      // Completed: green #46E3B7
-      // On-hold: amber #E5A93C
-      // Active: gold #FFB454
-      let color = 0xffb454;
-      if (overBudget) {
-        color = 0xff4d5e;
-      } else if (proj.status === 'completed') {
-        color = 0x46e3b7;
-      } else if (proj.status === 'on_hold') {
-        color = 0xe5a93c;
-      }
+      // Status color from shared single source of truth in projectRules.ts:
+      // Active: #35D49A, Completed: #5B93FF, On hold: #E8C14A, Over budget: #FF4D5E (overrides status)
+      const hexColor = getProjectStatusColor(proj);
+      const colorNum = parseInt(hexColor.replace('#', '0x'), 16);
 
       // Orbit ring: concentric thin ring, color #FFB454, opacity 0.22
       const ringGeom = new THREE.RingGeometry(orbitRadius - 0.008, orbitRadius + 0.008, 120);
@@ -260,11 +247,14 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
       const pivot = new THREE.Group();
       pivot.rotation.y = i * 1.3;
 
+      // MeshStandardMaterial with color = hex, emissive = hex, emissiveIntensity 0.45, roughness 0.4, metalness 0.15
       const planetGeom = new THREE.SphereGeometry(planetSize, 32, 32);
       const planetMat = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.35,
-        metalness: 0.2,
+        color: colorNum,
+        emissive: colorNum,
+        emissiveIntensity: 0.45,
+        roughness: 0.4,
+        metalness: 0.15,
         transparent: true,
         opacity: 1.0,
       });
@@ -279,7 +269,7 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
         mesh: planetMesh,
         speed: 0.012 / (1 + i * 0.45),
         status: proj.status,
-        isOver: overBudget,
+        isOver: hexColor === '#FF4D5E',
         currentScale: 1.0,
       });
     });
@@ -358,39 +348,39 @@ export const OrbitScene: React.FC<OrbitSceneProps> = ({
 
   return (
     <>
-      {/* WebGL Canvas (owned directly by React, hidden when reduced effects) */}
+      {/* WebGL Canvas (owned directly by React, hidden when reduced effects; 40% opacity below 900px) */}
       <canvas
         ref={canvasRef}
         id="gl"
         aria-hidden="true"
         style={{ display: reduceEffects ? 'none' : 'block' }}
-        className="fixed inset-0 w-full h-full pointer-events-none z-0"
+        className="fixed inset-0 w-full h-full pointer-events-none z-0 max-[900px]:opacity-40"
       />
 
-      {/* Legend: small, clean glass card at bottom-right (fixed, desktop only, hidden below 900px) */}
+      {/* Legend: glass card at bottom-right containing heading "Planet size = budget" and 4 status dots; hidden below 900px */}
       <div
         className="hidden min-[900px]:flex fixed bottom-6 right-6 z-20 solar-glass px-4 py-3 rounded-[16px] flex-col gap-2 text-xs shadow-solar-card pointer-events-auto"
         aria-label="3D Orbit Scene Legend"
       >
-        <span className="text-[11px] font-semibold tracking-wider text-[#FFF6EA] uppercase">
-          3D SCENE · LIVE
+        <span className="text-[12px] font-semibold text-[#FFF6EA]">
+          Planet size = budget
         </span>
         <div className="flex items-center gap-3.5 text-[11px] text-[#B6A78F]">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#FFB454]" />
+            <span className="w-2 h-2 rounded-full bg-[#35D49A]" />
             <span>Active</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#FF6B6B]" />
-            <span>Overdue</span>
+            <span className="w-2 h-2 rounded-full bg-[#5B93FF]" />
+            <span>Completed</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#E8C14A]" />
+            <span>On hold</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#FF4D5E]" />
             <span>Over budget</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#46E3B7]" />
-            <span>Completed</span>
           </span>
         </div>
       </div>

@@ -17,7 +17,10 @@ export const StatCard: React.FC<StatCardProps> = ({
       <span className="block text-xs font-normal text-muted whitespace-nowrap">
         {label}
       </span>
-      <b className="block mt-1 font-display text-[28px] font-semibold text-[#FFF6EA] tabular-nums leading-tight">
+      <b
+        style={{ color: '#FFF6EA' }}
+        className="block mt-1 font-display text-[28px] font-semibold text-[#FFF6EA] tabular-nums leading-tight"
+      >
         {value}
       </b>
     </div>

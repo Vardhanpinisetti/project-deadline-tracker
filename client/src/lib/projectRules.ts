@@ -81,3 +81,31 @@ export function getBudgetUsagePercentage(budget: number, spentAmount: number): n
 export function getOverBudgetAmount(budget: number, spentAmount: number): number {
   return Math.max(0, spentAmount - budget);
 }
+
+/**
+ * Design System Status Colors (Single Source of Truth)
+ * Active: #35D49A (green)
+ * Completed: #5B93FF (blue)
+ * On hold: #E8C14A (amber/yellow)
+ * Over budget: #FF4D5E (vivid red, overrides status)
+ */
+export const STATUS_COLORS = {
+  active: '#35D49A',
+  completed: '#5B93FF',
+  on_hold: '#E8C14A',
+  overBudget: '#FF4D5E',
+} as const;
+
+/**
+ * Returns the theme color for a project.
+ * If ANY project is over budget (spentAmount > budget), it returns #FF4D5E.
+ * Otherwise returns the status color (active, completed, on_hold).
+ */
+export function getProjectStatusColor(
+  project: Pick<Project, 'status' | 'budget' | 'spentAmount'>
+): string {
+  if (isOverBudget(project)) {
+    return STATUS_COLORS.overBudget;
+  }
+  return STATUS_COLORS[project.status] || STATUS_COLORS.active;
+}
