@@ -8,6 +8,9 @@ interface OrbitSceneProps {
   statusFilter: StatusFilter;
   hoveredProjectId: number | null;
   reduceEffects?: boolean;
+  scrollY?: number;
+  scrollVelocity?: number;
+  viewportHeight?: number;
 }
 
 function checkWebGL(): boolean {
@@ -32,12 +35,13 @@ interface PlanetEntry {
   currentScale: number;
 }
 
-export const OrbitScene: React.FC<OrbitSceneProps> = ({
-  projects,
-  statusFilter,
-  hoveredProjectId,
-  reduceEffects = false,
-}) => {
+export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
+  const {
+    projects,
+    statusFilter,
+    hoveredProjectId,
+    reduceEffects = false,
+  } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [webGLSupported] = useState<boolean>(() => checkWebGL());
 
