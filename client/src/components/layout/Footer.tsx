@@ -14,24 +14,27 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
       "
       aria-label="Footer and CTA"
     >
-      {/* Glass CTA Panel (max-width 880u, centred, 1px top highlight) */}
+      {/* Glass CTA Panel (max-width 880u, centred, only 1px top highlight, NO bottom-left orange glow) */}
       <div
         data-reveal
-        className="solar-glass w-full text-center relative mx-auto
+        className="w-full text-center relative mx-auto
           max-w-full pt-[40px] px-[22px] pb-[34px] rounded-[18px]
           min-[821px]:max-w-[calc(880*var(--u,1px))] min-[821px]:p-[calc(56*var(--u,1px))_calc(60*var(--u,1px))_calc(50*var(--u,1px))] min-[821px]:rounded-[calc(18*var(--u,1px))]
         "
         style={{
-          boxShadow:
-            'inset 0 1px 0 rgba(255,255,255,0.18), 0 calc(24 * var(--u, 1px)) calc(60 * var(--u, 1px)) rgba(0,0,0,0.35)',
+          background: 'linear-gradient(160deg, rgba(255, 180, 84, 0.08), rgba(20, 15, 12, 0.65))',
+          border: '1px solid rgba(255, 200, 140, 0.16)',
+          backdropFilter: 'blur(22px)',
+          WebkitBackdropFilter: 'blur(22px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 calc(24 * var(--u, 1px)) calc(60 * var(--u, 1px)) rgba(0,0,0,0.4)',
         }}
       >
-        {/* Top subtle highlight line */}
+        {/* 1px top highlight line from 15% to 85% of the width */}
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 h-[1px] w-[60%] opacity-40 pointer-events-none"
+          className="absolute top-0 left-[15%] right-[15%] h-[1px] pointer-events-none"
           style={{
             background:
-              'linear-gradient(90deg, transparent, rgba(255,220,180,0.8), transparent)',
+              'linear-gradient(90deg, transparent, rgba(255,210,160,0.8), transparent)',
           }}
         />
 
@@ -81,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
       <div className="w-full mt-auto pt-16 flex flex-col items-center text-center select-none">
         {/* Legal Line: ©2026 EnvisionStudio · Project Deadline Tracker (13u ink-3) */}
         <p
-          className="text-ink-3 font-normal mb-2
+          className="text-ink-3 font-normal mb-3
             text-[12px]
             min-[821px]:text-[calc(13*var(--u,1px))]
           "
@@ -89,17 +92,19 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
           ©2026 EnvisionStudio · Project Deadline Tracker
         </p>
 
-        {/* Huge Ghost Wordmark "EnvisionStudio" (236u, tracking -0.05em, line-height .8, transparent clipped) */}
+        {/* Huge Ghost Wordmark "EnvisionStudio" (clamp(56px, 15.5vw, 236px), white-space nowrap, text-align center, line-height .8, overflow hidden on wrapper, centred, no horizontal scroll) */}
         <div
           aria-hidden="true"
-          className="w-full overflow-hidden flex justify-center pointer-events-none"
+          className="w-full flex justify-center pointer-events-none text-center"
+          style={{ overflow: 'hidden' }}
         >
           <span
-            className="font-light tracking-[-0.05em] leading-[0.8] whitespace-nowrap block
-              text-[76px]
-              min-[821px]:text-[calc(236*var(--u,1px))]
-            "
+            className="font-light tracking-[-0.05em] block select-none pointer-events-none"
             style={{
+              fontSize: 'clamp(56px, 15.5vw, 236px)',
+              whiteSpace: 'nowrap',
+              textAlign: 'center',
+              lineHeight: 0.8,
               background:
                 'linear-gradient(180deg, rgba(255,200,140,0.22) 0%, rgba(255,200,140,0) 85%)',
               WebkitBackgroundClip: 'text',
@@ -113,3 +118,5 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
     </footer>
   );
 };
+
+export default Footer;

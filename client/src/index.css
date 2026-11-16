@@ -167,11 +167,11 @@
   }
 }
 
-/* Card project title: explicitly 17px, font-weight 600, #FFF6EA with no overrides */
+/* Card project title: explicitly min 17px, font-weight 600, #FFF6EA with no overrides */
 .card-project-title {
   color: #FFF6EA !important;
   font-weight: 600 !important;
-  font-size: calc(17 * var(--u, 1px)) !important;
+  font-size: max(17px, calc(17 * var(--u, 1px))) !important;
   line-height: 1.35 !important;
   letter-spacing: -0.015em !important;
 }

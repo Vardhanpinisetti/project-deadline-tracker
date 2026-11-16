@@ -156,7 +156,10 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 reduceMotion={reduceEffects}
               />
             </div>
-            <div className="text-[13px] min-[821px]:text-[calc(14*var(--u,1px))] text-ink-3 mt-1 font-normal">
+            <div
+              style={{ fontSize: 'max(13px, calc(13 * var(--u, 1px)))' }}
+              className="text-ink-3 mt-1 font-normal"
+            >
               Total projects
             </div>
           </div>
@@ -170,7 +173,10 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 reduceMotion={reduceEffects}
               />
             </div>
-            <div className="text-[13px] min-[821px]:text-[calc(14*var(--u,1px))] text-ink-3 mt-1 font-normal">
+            <div
+              style={{ fontSize: 'max(13px, calc(13 * var(--u, 1px)))' }}
+              className="text-ink-3 mt-1 font-normal"
+            >
               Active
             </div>
           </div>
@@ -184,7 +190,10 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 reduceMotion={reduceEffects}
               />
             </div>
-            <div className="text-[13px] min-[821px]:text-[calc(14*var(--u,1px))] text-ink-3 mt-1 font-normal">
+            <div
+              style={{ fontSize: 'max(13px, calc(13 * var(--u, 1px)))' }}
+              className="text-ink-3 mt-1 font-normal"
+            >
               Overdue
             </div>
           </div>
@@ -198,7 +207,10 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
                 reduceMotion={reduceEffects}
               />
             </div>
-            <div className="text-[13px] min-[821px]:text-[calc(14*var(--u,1px))] text-ink-3 mt-1 font-normal whitespace-nowrap">
+            <div
+              style={{ fontSize: 'max(13px, calc(13 * var(--u, 1px)))' }}
+              className="text-ink-3 mt-1 font-normal whitespace-nowrap"
+            >
               Over budget
             </div>
           </div>

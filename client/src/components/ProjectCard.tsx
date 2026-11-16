@@ -81,17 +81,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         <div className="flex items-start justify-between gap-3">
           <h3
             id={`project-title-${project.id}`}
-            style={{ color: '#FFF6EA', fontWeight: 600, fontSize: '17px' }}
+            style={{
+              color: '#FFF6EA',
+              fontWeight: 600,
+              fontSize: 'max(17px, calc(17 * var(--u, 1px)))',
+            }}
             className="card-project-title break-words tracking-tight flex-1 pr-2"
           >
             {project.title}
           </h3>
 
           <div className="shrink-0 relative inline-flex items-center">
-            {/* Status Select Pill */}
+            {/* Status Select Pill (min 12px) */}
             <span
               aria-hidden="true"
-              className={`inline-flex items-center gap-1.5 font-semibold text-xs rounded-full border px-2.5 py-1 pointer-events-none transition-colors ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
+              style={{ fontSize: 'max(12px, calc(12 * var(--u, 1px)))' }}
+              className={`inline-flex items-center gap-1.5 font-semibold rounded-full border px-2.5 py-1 pointer-events-none transition-colors ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
               <span>{statusConfig.label}</span>
@@ -127,8 +132,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         )}
 
-        {/* 3. Due date line */}
-        <div className="flex items-center gap-2 text-xs">
+        {/* 3. Due date line (min 14px) */}
+        <div
+          className="flex items-center gap-2"
+          style={{ fontSize: 'max(14px, calc(14 * var(--u, 1px)))' }}
+        >
           {project.deadline ? (
             <>
               <Calendar
@@ -155,9 +163,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           )}
         </div>
 
-        {/* 4. Spent row with the progress bar */}
+        {/* 4. Spent row with the progress bar (min 14px) */}
         <div className="space-y-1.5 pt-0.5">
-          <div className="flex items-center justify-between text-xs">
+          <div
+            className="flex items-center justify-between"
+            style={{ fontSize: 'max(14px, calc(14 * var(--u, 1px)))' }}
+          >
             <span className="text-muted">Spent:</span>
             <div>
               <span

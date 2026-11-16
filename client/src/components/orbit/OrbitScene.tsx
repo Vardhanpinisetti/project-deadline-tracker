@@ -32,15 +32,33 @@ interface OrbitPose {
   s: number;     // outer diameter as share of viewport height
   tiltX: number; // radians
   spinY: number; // radians
+  opacity: number; // 0..1
 }
 
-const POSES: Record<'hero' | 'overview' | 'projects' | 'orbit' | 'end', OrbitPose> = {
-  hero:     { x: 0.45,  y: 0.05,  s: 0.78, tiltX: 0.50, spinY: 0.0 },
-  overview: { x: 0.60,  y: -0.55, s: 0.40, tiltX: 0.35, spinY: 0.6 },
-  projects: { x: 0.78,  y: 0.35,  s: 0.30, tiltX: 0.60, spinY: 1.2 },
-  orbit:    { x: 0.42,  y: 0.00,  s: 0.85, tiltX: 0.50, spinY: 2.0 },
-  end:      { x: -0.60, y: 0.45,  s: 0.40, tiltX: 0.40, spinY: 2.6 },
-};
+function getPoses(windowWidth: number): Record<'hero' | 'overview' | 'projects' | 'orbit' | 'end', OrbitPose> {
+  const isMobile = windowWidth <= 820;
+  const isTablet = windowWidth < 1100;
+
+  if (isMobile) {
+    return {
+      hero:     { x: 0.20,  y: 0.40,  s: 0.35, tiltX: 0.50, spinY: 0.0, opacity: 0.40 },
+      overview: { x: 0.45,  y: -0.40, s: 0.25, tiltX: 0.35, spinY: 0.6, opacity: 0.35 },
+      projects: { x: 0.50,  y: 0.45,  s: 0.20, tiltX: 0.60, spinY: 1.2, opacity: 0.35 },
+      orbit:    { x: 0.20,  y: 0.10,  s: 0.55, tiltX: 0.50, spinY: 2.0, opacity: 0.40 },
+      end:      { x: -0.50, y: 0.50,  s: 0.25, tiltX: 0.40, spinY: 2.6, opacity: 0.25 },
+    };
+  }
+
+  return {
+    hero:     { x: 0.45,  y: 0.05,  s: 0.78, tiltX: 0.50, spinY: 0.0, opacity: 1.0 },
+    overview: { x: 0.60,  y: -0.55, s: 0.40, tiltX: 0.35, spinY: 0.6, opacity: 0.9 },
+    // Projects pose sits strictly in the empty margin (at 1440: x=0.86, y=0.55, s=0.22, opacity=0.55; <1100: 0.35)
+    projects: { x: 0.86,  y: 0.55,  s: 0.22, tiltX: 0.60, spinY: 1.2, opacity: isTablet ? 0.35 : 0.55 },
+    orbit:    { x: 0.42,  y: 0.00,  s: 0.85, tiltX: 0.50, spinY: 2.0, opacity: 1.0 },
+    // End pose: shifted far to the upper corner so it never casts a glow under the CTA panel
+    end:      { x: -0.80, y: 0.65,  s: 0.30, tiltX: 0.40, spinY: 2.6, opacity: 0.30 },
+  };
+}
 
 interface SectionPositions {
   hero: number;
@@ -75,15 +93,19 @@ function computeSectionPositions(): SectionPositions {
   return { hero: p0, overview: p1, projects: p2, orbit: p3, end: p4 };
 }
 
-function getInterpolatedTargetPose(currentScrollY: number, positions: SectionPositions): OrbitPose {
+function getInterpolatedTargetPose(
+  currentScrollY: number,
+  positions: SectionPositions,
+  poses: Record<'hero' | 'overview' | 'projects' | 'orbit' | 'end', OrbitPose>
+): OrbitPose {
   const keys: (keyof SectionPositions)[] = ['hero', 'overview', 'projects', 'orbit', 'end'];
   const posArray = [positions.hero, positions.overview, positions.projects, positions.orbit, positions.end];
 
   if (currentScrollY <= posArray[0]) {
-    return { ...POSES.hero };
+    return { ...poses.hero };
   }
   if (currentScrollY >= posArray[4]) {
-    return { ...POSES.end };
+    return { ...poses.end };
   }
 
   for (let i = 0; i < 4; i++) {
@@ -94,8 +116,8 @@ function getInterpolatedTargetPose(currentScrollY: number, positions: SectionPos
       const progress = span > 0 ? (currentScrollY - startPos) / span : 0;
       const eased = easeInOutCubic(progress);
 
-      const poseA = POSES[keys[i]];
-      const poseB = POSES[keys[i + 1]];
+      const poseA = poses[keys[i]];
+      const poseB = poses[keys[i + 1]];
 
       return {
         x: lerp(poseA.x, poseB.x, eased),
@@ -103,11 +125,12 @@ function getInterpolatedTargetPose(currentScrollY: number, positions: SectionPos
         s: lerp(poseA.s, poseB.s, eased),
         tiltX: lerp(poseA.tiltX, poseB.tiltX, eased),
         spinY: lerp(poseA.spinY, poseB.spinY, eased),
+        opacity: lerp(poseA.opacity, poseB.opacity, eased),
       };
     }
   }
 
-  return { ...POSES.end };
+  return { ...poses.end };
 }
 
 interface PlanetEntry {
@@ -160,7 +183,7 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
     disposables: [],
     mouse: { x: 0, y: 0 },
     camTilt: { x: 0, y: 0 },
-    currentPose: { ...POSES.hero },
+    currentPose: { ...getPoses(typeof window !== 'undefined' ? window.innerWidth : 1440).hero },
     positions: { hero: 0, overview: 800, projects: 1600, orbit: 2400, end: 3200 },
     smoothedVelocity: 0,
     lastTime: performance.now(),
@@ -176,7 +199,6 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
 
     updatePositions();
     window.addEventListener('resize', updatePositions, { passive: true });
-    // Slight delay to ensure DOM layout has stabilized
     const timer = setTimeout(updatePositions, 350);
 
     return () => {
@@ -230,23 +252,25 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
     scene.add(rimLight);
 
     // 4. Main Orbit Group
+    const poses = getPoses(width);
     const group = new THREE.Group();
-    group.rotation.x = POSES.hero.tiltX;
+    group.rotation.x = poses.hero.tiltX;
     scene.add(group);
 
     // 5. Sun & Halo
-    // Sun: radius 0.7, MeshBasicMaterial #FFC060
+    // Sun: radius 0.7, MeshBasicMaterial #FFC060, toneMapped: false
     const sunGeom = new THREE.SphereGeometry(0.7, 40, 40);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc060 });
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffc060, toneMapped: false });
     const sunMesh = new THREE.Mesh(sunGeom, sunMat);
     group.add(sunMesh);
 
-    // Halo: radius 0.95, MeshBasicMaterial, color #FFC060, transparent, opacity 0.14
+    // Halo: radius 0.95, MeshBasicMaterial, color #FFC060, transparent, opacity 0.14, toneMapped: false
     const haloGeom = new THREE.SphereGeometry(0.95, 40, 40);
     const haloMat = new THREE.MeshBasicMaterial({
       color: 0xffc060,
       transparent: true,
       opacity: 0.14,
+      toneMapped: false,
     });
     const haloMesh = new THREE.Mesh(haloGeom, haloMat);
     group.add(haloMesh);
@@ -364,7 +388,7 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
       const pivot = new THREE.Group();
       pivot.rotation.y = i * 1.3;
 
-      // MeshStandardMaterial with color = hex, emissive = hex, emissiveIntensity 0.45, roughness 0.4, metalness 0.15
+      // MeshStandardMaterial with vivid color and toneMapped: false to prevent desaturation
       const planetGeom = new THREE.SphereGeometry(planetRadius, 32, 32);
       const planetMat = new THREE.MeshStandardMaterial({
         color: colorNum,
@@ -374,6 +398,7 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
         metalness: 0.15,
         transparent: true,
         opacity: 1.0,
+        toneMapped: false,
       });
       const planetMesh = new THREE.Mesh(planetGeom, planetMat);
       planetMesh.position.x = orbitRadius;
@@ -440,7 +465,8 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
       stateRef.current.totalTime += dt;
 
       // 1. Target Pose from Scroll Progress
-      const targetPose = getInterpolatedTargetPose(scrollY, positions);
+      const activePoses = getPoses(window.innerWidth);
+      const targetPose = getInterpolatedTargetPose(scrollY, positions, activePoses);
 
       // 2. Ease currentPose toward targetPose (k = 1 - e^(-3.2dt))
       if (prefersReducedMotion) {
@@ -449,6 +475,7 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
         currentPose.s = targetPose.s;
         currentPose.tiltX = targetPose.tiltX;
         currentPose.spinY = targetPose.spinY;
+        currentPose.opacity = targetPose.opacity;
       } else {
         const k = 1 - Math.exp(-3.2 * dt);
         currentPose.x += (targetPose.x - currentPose.x) * k;
@@ -456,6 +483,12 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
         currentPose.s += (targetPose.s - currentPose.s) * k;
         currentPose.tiltX += (targetPose.tiltX - currentPose.tiltX) * k;
         currentPose.spinY += (targetPose.spinY - currentPose.spinY) * k;
+        currentPose.opacity += (targetPose.opacity - currentPose.opacity) * k;
+      }
+
+      // Apply dynamic canvas opacity
+      if (canvasRef.current) {
+        canvasRef.current.style.opacity = currentPose.opacity.toFixed(3);
       }
 
       // 3. World Space Transformation
@@ -549,13 +582,16 @@ export const OrbitScene: React.FC<OrbitSceneProps> = (props) => {
 
   return (
     <>
-      {/* WebGL Canvas (owned directly by React, hidden when reduced effects; 40% opacity below 820px) */}
+      {/* WebGL Canvas (owned directly by React, hidden when reduced effects; pointer-events: none, z-index: 0) */}
       <canvas
         ref={canvasRef}
         id="gl"
         aria-hidden="true"
-        style={{ display: reduceEffects ? 'none' : 'block' }}
-        className="fixed inset-0 w-full h-full pointer-events-none z-0 max-[820px]:opacity-40"
+        style={{
+          display: reduceEffects ? 'none' : 'block',
+          pointerEvents: 'none',
+        }}
+        className="fixed inset-0 w-full h-full pointer-events-none z-0"
       />
 
       {/* Legend: glass card at bottom-right containing heading "Planet size = budget" and 4 status dots; hidden below 900px */}
