@@ -134,6 +134,3 @@ Spent amount equal to budget is within budget (budget fully used, not exceeded).
 
 ---
 
-## 6. AI Usage
-
-[tools I used: Claude for design exploration and prompts, Antigravity for code generation]; [what I asked them to generate]; [what I manually reviewed and verified: validation rules, the overdue and budget logic, SQL queries, the tests, the edge cases]; [what I changed myself].
