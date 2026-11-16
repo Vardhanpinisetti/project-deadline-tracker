@@ -98,7 +98,7 @@ export const ProjectsPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-base text-ink selection:bg-accent/30 selection:text-white">
+    <div className="relative min-h-screen bg-base text-ink selection:bg-accent/30 selection:text-white overflow-x-hidden">
       {/* Fixed 4-Layer Scene Stack (z-index 0) */}
       <SceneStack scrollState={scrollState} reduceEffects={reduceEffects}>
         <OrbitErrorBoundary fallback={null}>
@@ -141,7 +141,7 @@ export const ProjectsPage: React.FC = () => {
         <section
           id="projects"
           className="relative z-10 w-full mx-auto
-            px-[16px] py-[110px_80px]
+            px-[16px] pt-[110px] pb-[80px]
             min-[821px]:px-[calc(64*var(--u,1px))] min-[821px]:pt-[calc(150*var(--u,1px))] min-[821px]:pb-[calc(160*var(--u,1px))]
           "
           aria-label="Active Project Tracker"
@@ -258,6 +258,7 @@ export const ProjectsPage: React.FC = () => {
       <button
         type="button"
         onClick={() => setReduceEffects(!reduceEffects)}
+        aria-pressed={reduceEffects}
         className="fixed bottom-4 left-4 z-30 text-xs text-ink-3 hover:text-ink px-3 py-1.5 rounded-full bg-[rgba(24,18,12,0.65)] border border-[rgba(255,180,84,0.22)] backdrop-blur-md transition-colors shadow-sm"
         title="Toggle background motion & 3D effects"
       >

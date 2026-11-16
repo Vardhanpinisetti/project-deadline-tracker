@@ -43,7 +43,7 @@ export const BudgetOrbitSection: React.FC<BudgetOrbitSectionProps> = ({
       id="orbit"
       ref={sectionRef}
       className="relative z-10 w-full
-        px-[16px] py-[110px_80px]
+        px-[16px] pt-[110px] pb-[80px]
         min-[821px]:px-[calc(64*var(--u,1px))] min-[821px]:pt-[calc(190*var(--u,1px))] min-[821px]:pb-[calc(160*var(--u,1px))]
       "
       aria-label="Budget Orbit Visualization"

@@ -295,3 +295,24 @@ html.anim [data-in] {
     opacity: 1 !important;
   }
 }
+
+html.reduced-effects *,
+html.reduced-effects ::before,
+html.reduced-effects ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+  transform: none !important;
+}
+
+html.reduced-effects [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+html.reduced-effects html.anim [data-in],
+html.reduced-effects [data-in] {
+  opacity: 1 !important;
+}

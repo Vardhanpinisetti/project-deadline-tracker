@@ -87,7 +87,7 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
       id="overview"
       ref={sectionRef}
       className="relative z-10 w-full text-center flex flex-col items-center
-        px-[16px] py-[110px_80px]
+        px-[16px] pt-[110px] pb-[80px]
         min-[821px]:px-[calc(64*var(--u,1px))] min-[821px]:pt-[calc(300*var(--u,1px))] min-[821px]:pb-[calc(150*var(--u,1px))]
       "
       aria-label="Platform Overview"

@@ -24,6 +24,14 @@ export function useReducedEffects(): [boolean, (val: boolean | ((prev: boolean) 
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
+  useEffect(() => {
+    if (reduced) {
+      document.documentElement.classList.add('reduced-effects');
+    } else {
+      document.documentElement.classList.remove('reduced-effects');
+    }
+  }, [reduced]);
+
   const setReduced = (val: boolean | ((prev: boolean) => boolean)) => {
     setReducedState((prev) => {
       const next = typeof val === 'function' ? val(prev) : val;

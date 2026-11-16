@@ -18,7 +18,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
       <div
         data-reveal
         className="solar-glass w-full text-center relative mx-auto
-          max-w-full p-[40px_22px_34px] rounded-[18px]
+          max-w-full pt-[40px] px-[22px] pb-[34px] rounded-[18px]
           min-[821px]:max-w-[calc(880*var(--u,1px))] min-[821px]:p-[calc(56*var(--u,1px))_calc(60*var(--u,1px))_calc(50*var(--u,1px))] min-[821px]:rounded-[calc(18*var(--u,1px))]
         "
         style={{
@@ -35,10 +35,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenModal }) => {
           }}
         />
 
-        {/* Headline 72u */}
+        {/* Headline 72u (42px on mobile) */}
         <h2
           className="solar-headline mx-auto
-            text-[40px]
+            text-[42px]
             min-[821px]:text-[calc(72*var(--u,1px))]
           "
         >
