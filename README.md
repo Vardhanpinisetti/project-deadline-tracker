@@ -63,6 +63,8 @@ Both backend and frontend come pre-configured with default fallbacks so the app 
 - **Frontend (React + Vite + TypeScript + Tailwind CSS)**: Sub-millisecond HMR, clean hook architecture (`useProjects`), accessible modal interactions, and Solar Gold design system without bloated UI libraries.
 - **Three.js (Optional Orbit Visual)**: Lightweight, lazy-loaded 3D visualization that renders as an optional decoration and never blocks or affects core app functionality.
 
+Edit and delete were added beyond the three required endpoints, because a real tracker needs them.
+
 ---
 
 ## 3. Decision 1: Tasks Model
