@@ -78,6 +78,19 @@ Both the server and client run out-of-the-box with zero configuration required. 
 ![Mobile Cards View](screenshots/mobile-cards-375x844.png)
 *Figures 5 & 6: Mobile viewport rendering at 375×844. Verified with zero horizontal scroll (`scrollWidth === clientWidth`), touch-friendly targets (36px+), readable typography, and card action buttons always visible.*
 
+#### 6. Live Video Walkthrough & Output Demo
+An interactive video recording demonstrating the full end-to-end functionality of the Project Deadline Tracker:
+- **Atmospheric Celestial 3D Orbit**: Three.js planetary visualization smoothly transforming with scroll velocity.
+- **Dynamic Status Filtering**: Segmented tabs switching between All, Active, Completed, and On hold with live tab counts.
+- **Real-Time Badge Computing**: Automatic calculation of overdue deadlines and budget overruns (`+₹20,000`).
+- **Interactive Modals**: Form creation, inline editing, server error banners, and accessible delete confirmation.
+
+▶️ **[Download / Watch Walkthrough Video (WebM)](screenshots/demo-walkthrough.webm)**
+
+<video src="screenshots/demo-walkthrough.webm" width="100%" controls loop muted>
+  Your browser does not support the video tag. <a href="screenshots/demo-walkthrough.webm">Click here to view or download the walkthrough video.</a>
+</video>
+
 ---
 
 ## 2. Stack Choice
