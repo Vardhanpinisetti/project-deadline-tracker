@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import {
   createProjectSchema,
+  updateProjectSchema,
   updateStatusSchema,
   statusQuerySchema,
   projectIdParamSchema,
@@ -47,8 +48,36 @@ export class ProjectsController {
   }
 
   /**
+   * PATCH /api/projects/:id
+   * Partially updates an existing project's fields
+   */
+  static async updateProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const paramValidation = projectIdParamSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        throw paramValidation.error;
+      }
+
+      const bodyValidation = updateProjectSchema.safeParse(req.body);
+      if (!bodyValidation.success) {
+        throw bodyValidation.error;
+      }
+
+      const { id } = paramValidation.data;
+      const updated = ProjectsService.updateProject(id, bodyValidation.data);
+      if (!updated) {
+        throw new AppError('Project not found', 404);
+      }
+
+      res.status(200).json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
    * PATCH /api/projects/:id/status
-   * Updates the status of an existing project
+   * Updates only the status of an existing project
    */
   static async updateStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -71,6 +100,29 @@ export class ProjectsController {
       }
 
       res.status(200).json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * DELETE /api/projects/:id
+   * Permanently deletes a project by ID
+   */
+  static async deleteProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const paramValidation = projectIdParamSchema.safeParse(req.params);
+      if (!paramValidation.success) {
+        throw paramValidation.error;
+      }
+
+      const { id } = paramValidation.data;
+      const deleted = ProjectsService.deleteProject(id);
+      if (!deleted) {
+        throw new AppError('Project not found', 404);
+      }
+
+      res.status(204).send();
     } catch (err) {
       next(err);
     }

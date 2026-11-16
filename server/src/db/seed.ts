@@ -47,15 +47,33 @@ export const INITIAL_PROJECTS: SeedProject[] = [
 ];
 
 /**
- * Seeds the projects table idempotently.
- * Only inserts if the table is empty, or if force is true.
+ * Seeds the projects table ONLY when the database is created for the first time.
+ * Tracked via SQLite `PRAGMA user_version`:
+ * - If user_version = 0, seed the 5 projects and advance user_version to 1.
+ * - If user_version >= 1, do not seed on restart (even if the table was emptied by delete).
+ * - If force = true, wipe table, seed 5 projects, and set user_version to 1.
  */
 export function seedProjects(db: AppDatabase, force = false): boolean {
-  const countRow = db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number | bigint };
-  const currentCount = Number(countRow?.count || 0);
+  const versionRow = db.prepare('PRAGMA user_version').get() as
+    | { user_version?: number | bigint }
+    | undefined;
+  const userVersion = Number(versionRow?.user_version || 0);
 
-  if (currentCount > 0 && !force) {
-    return false; // Already seeded, skip
+  if (userVersion >= 1 && !force) {
+    return false; // Database was already initialized/seeded previously; do not re-seed
+  }
+
+  // Handle existing databases created before the user_version pragma rule:
+  // if user_version is 0 but rows already exist, mark user_version = 1 and skip.
+  if (!force) {
+    const countRow = db.prepare('SELECT COUNT(*) as count FROM projects').get() as {
+      count: number | bigint;
+    };
+    const currentCount = Number(countRow?.count || 0);
+    if (currentCount > 0) {
+      db.exec('PRAGMA user_version = 1;');
+      return false;
+    }
   }
 
   const insertStmt = db.prepare(`
@@ -81,6 +99,7 @@ export function seedProjects(db: AppDatabase, force = false): boolean {
         project.spentAmount
       );
     }
+    db.exec('PRAGMA user_version = 1;');
   });
 
   runSeed();
@@ -93,8 +112,8 @@ if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')
   const force = process.argv.includes('--force');
   const seeded = seedProjects(db, force);
   if (seeded) {
-    console.log(`[Seed] Successfully seeded ${INITIAL_PROJECTS.length} projects into SQLite database.`);
+    console.log(`[Seed] Successfully seeded ${INITIAL_PROJECTS.length} projects into SQLite database (user_version = 1).`);
   } else {
-    console.log('[Seed] Database already contains projects. Skipping seed (use --force to overwrite).');
+    console.log('[Seed] Database already initialized (user_version >= 1). Skipping seed (use --force to overwrite).');
   }
 }

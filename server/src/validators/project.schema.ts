@@ -102,7 +102,28 @@ export const createProjectSchema = z.object({
     .refine(hasAtMostTwoDecimals, {
       message: 'Spent amount may have at most 2 decimal places'
     })
+}).strict({
+  message: 'Unknown fields are not allowed'
 });
+
+/**
+ * PATCH /api/projects/:id schema:
+ * - Derived directly from createProjectSchema (partial) to maintain single source of truth.
+ * - Rejects unknown fields with 400 (.strict()).
+ * - Requires at least one defined field in the body, otherwise rejects with 400.
+ */
+export const updateProjectSchema = createProjectSchema
+  .partial()
+  .strict({
+    message: 'Unknown fields are not allowed'
+  })
+  .refine(
+    (data) => Object.keys(data).some((key) => (data as Record<string, unknown>)[key] !== undefined),
+    {
+      message: 'At least one field must be provided for update',
+      path: ['body']
+    }
+  );
 
 export const updateStatusSchema = z.object({
   status: z.enum(VALID_STATUSES, {
@@ -112,6 +133,8 @@ export const updateStatusSchema = z.object({
   })
 }, {
   required_error: 'Request body is required'
+}).strict({
+  message: 'Unknown fields are not allowed'
 });
 
 export const statusQuerySchema = z.object({
@@ -130,4 +153,5 @@ export const projectIdParamSchema = z.object({
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;

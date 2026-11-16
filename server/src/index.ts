@@ -23,9 +23,11 @@ const app = createApp();
 const server = app.listen(PORT, () => {
   console.log(`[Server] Project Deadline Tracker API running on http://localhost:${PORT}`);
   console.log(`[Server] Endpoints:`);
-  console.log(`  - GET   http://localhost:${PORT}/api/projects`);
-  console.log(`  - POST  http://localhost:${PORT}/api/projects`);
-  console.log(`  - PATCH http://localhost:${PORT}/api/projects/:id/status`);
+  console.log(`  - GET    http://localhost:${PORT}/api/projects`);
+  console.log(`  - POST   http://localhost:${PORT}/api/projects`);
+  console.log(`  - PATCH  http://localhost:${PORT}/api/projects/:id/status`);
+  console.log(`  - PATCH  http://localhost:${PORT}/api/projects/:id`);
+  console.log(`  - DELETE http://localhost:${PORT}/api/projects/:id`);
 });
 
 // Graceful shutdown

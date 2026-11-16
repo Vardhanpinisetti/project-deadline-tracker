@@ -1,5 +1,9 @@
 import { getDatabase } from '../db/connection.js';
-import { CreateProjectInput, ProjectStatus } from '../validators/project.schema.js';
+import {
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectStatus,
+} from '../validators/project.schema.js';
 
 export interface Project {
   id: number;
@@ -83,6 +87,41 @@ export class ProjectsService {
   }
 
   /**
+   * Updates fields of an existing project using parameterized SQL.
+   * Only provided fields are updated.
+   * Returns updated project or null if not found.
+   */
+  static updateProject(id: number, data: UpdateProjectInput): Project | null {
+    const db = getDatabase();
+
+    const ALLOWED_COLUMNS = ['title', 'status', 'deadline', 'budget', 'spentAmount'] as const;
+    const setClauses: string[] = [];
+    const values: unknown[] = [];
+
+    for (const col of ALLOWED_COLUMNS) {
+      if (col in data && (data as Record<string, unknown>)[col] !== undefined) {
+        setClauses.push(`${col} = ?`);
+        values.push((data as Record<string, unknown>)[col]);
+      }
+    }
+
+    if (setClauses.length === 0) {
+      return this.getProjectById(id);
+    }
+
+    values.push(id);
+    const sql = `UPDATE projects SET ${setClauses.join(', ')} WHERE id = ?`;
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...values);
+
+    if (Number(result.changes) === 0) {
+      return null;
+    }
+
+    return this.getProjectById(id);
+  }
+
+  /**
    * Updates the status of an existing project.
    * Returns updated project or null if not found.
    */
@@ -95,10 +134,21 @@ export class ProjectsService {
     `);
 
     const result = stmt.run(status, id);
-    if (result.changes === 0 || Number(result.changes) === 0) {
+    if (Number(result.changes) === 0) {
       return null;
     }
 
     return this.getProjectById(id);
+  }
+
+  /**
+   * Deletes a project by ID using parameterized SQL.
+   * Returns true if deleted, false if not found.
+   */
+  static deleteProject(id: number): boolean {
+    const db = getDatabase();
+    const stmt = db.prepare('DELETE FROM projects WHERE id = ?');
+    const result = stmt.run(id);
+    return Number(result.changes) > 0;
   }
 }
