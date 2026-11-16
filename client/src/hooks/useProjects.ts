@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Project, ProjectStatus, StatusFilter, ProjectStats, CreateProjectDTO } from '../types';
+import { Project, ProjectStatus, StatusFilter, ProjectStats, CreateProjectDTO, UpdateProjectDTO } from '../types';
 import { api, ApiError } from '../lib/api';
 import { isOverdue, isOverBudget } from '../lib/projectRules';
 
@@ -137,6 +137,59 @@ export function useProjects() {
     [statusFilter, fetchProjects]
   );
 
+  /**
+   * Updates an existing project via PATCH /api/projects/:id
+   * Updates local state and refreshes projects to preserve backend sort order.
+   */
+  const editProject = useCallback(
+    async (id: number, data: UpdateProjectDTO): Promise<Project> => {
+      const updated = await api.updateProject(id, data);
+      // Immediately update local arrays
+      setProjects((current) => current.map((p) => (p.id === id ? updated : p)));
+      setAllProjects((current) => current.map((p) => (p.id === id ? updated : p)));
+      // Re-fetch to guarantee backend sort order
+      await fetchProjects(statusFilter);
+      const all = await api.getProjects();
+      setAllProjects(all);
+      return updated;
+    },
+    [statusFilter, fetchProjects]
+  );
+
+  /**
+   * Optimistically deletes a project with rollback on error.
+   * If 404 is encountered, treats it as already deleted (keeps removed).
+   */
+  const deleteProject = useCallback(
+    async (
+      id: number
+    ): Promise<{ success: boolean; error?: string; notFound?: boolean }> => {
+      const prevProjects = [...projects];
+      const prevAll = [...allProjects];
+
+      // Optimistically remove from state
+      setProjects((current) => current.filter((p) => p.id !== id));
+      setAllProjects((current) => current.filter((p) => p.id !== id));
+
+      try {
+        await api.deleteProject(id);
+        return { success: true };
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 404) {
+          // 404: treat as already deleted, keep removed, do not rollback
+          return { success: false, notFound: true, error: err.message };
+        }
+        // Rollback on error
+        setProjects(prevProjects);
+        setAllProjects(prevAll);
+        const errorMessage =
+          err instanceof ApiError ? err.message : 'Failed to delete project';
+        return { success: false, error: errorMessage };
+      }
+    },
+    [projects, allProjects]
+  );
+
   return {
     projects,
     allProjects,
@@ -149,5 +202,7 @@ export function useProjects() {
     fetchProjects,
     updateProjectStatus,
     addProject,
+    editProject,
+    deleteProject,
   };
 }

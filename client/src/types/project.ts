@@ -20,6 +20,8 @@ export interface CreateProjectDTO {
   spentAmount: number;
 }
 
+export type UpdateProjectDTO = Partial<CreateProjectDTO>;
+
 export interface ValidationErrorDetail {
   field: string;
   message: string;

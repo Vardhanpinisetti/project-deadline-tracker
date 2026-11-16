@@ -9,11 +9,13 @@ import {
   getBudgetUsagePercentage,
   getOverBudgetAmount,
 } from '../lib/projectRules';
-import { Calendar, Minus, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, Minus, ChevronDown, Loader2, Pencil, Trash2 } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
   onStatusChange: (id: number, status: ProjectStatus) => Promise<{ success: boolean; error?: string }>;
+  onEdit?: (project: Project) => void;
+  onDelete?: (project: Project) => void;
   onHover?: (id: number | null) => void;
 }
 
@@ -47,6 +49,8 @@ const statusConfigs: Record<
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   onStatusChange,
+  onEdit,
+  onDelete,
   onHover,
 }) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -73,11 +77,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       aria-labelledby={`project-title-${project.id}`}
       onMouseEnter={() => onHover?.(project.id)}
       onMouseLeave={() => onHover?.(null)}
-      className="solar-glass solar-glass-hover rounded-[18px] transition-all duration-200"
+      className="group solar-glass solar-glass-hover rounded-[18px] transition-all duration-200"
       style={{ padding: '18px 20px' }}
     >
       <div className="flex flex-col gap-2.5">
-        {/* 1. Title and Status Select on one row */}
+        {/* 1. Title and Actions / Status Select on one row */}
         <div className="flex items-start justify-between gap-3">
           <h3
             id={`project-title-${project.id}`}
@@ -91,31 +95,63 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             {project.title}
           </h3>
 
-          <div className="shrink-0 relative inline-flex items-center">
-            {/* Status Select Pill (min 12px) */}
-            <span
-              aria-hidden="true"
-              style={{ fontSize: 'max(12px, calc(12 * var(--u, 1px)))' }}
-              className={`inline-flex items-center gap-1.5 font-semibold rounded-full border px-2.5 py-1 pointer-events-none transition-colors ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
-              <span>{statusConfig.label}</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
-            </span>
-            <select
-              value={project.status}
-              disabled={isUpdating}
-              onChange={(e) => handleStatusChange(e.target.value as ProjectStatus)}
-              aria-label={`Change status for ${project.title}`}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-            >
-              <option value="active" className="bg-[#0B1020] text-[#FFF6EA]">Active</option>
-              <option value="completed" className="bg-[#0B1020] text-[#FFF6EA]">Completed</option>
-              <option value="on_hold" className="bg-[#0B1020] text-[#FFF6EA]">On hold</option>
-            </select>
-            {isUpdating && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-accent ml-1.5" />
-            )}
+          <div className="shrink-0 flex items-center gap-1.5">
+            {/* Edit & Delete Action Buttons (36px hit area) */}
+            <div className="card-actions flex items-center gap-1">
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.(project);
+                }}
+                aria-label={`Edit ${project.title}`}
+                className="w-9 h-9 inline-flex items-center justify-center rounded-lg text-ink-3 hover:text-accent hover:bg-white/[0.06] active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="Edit project"
+              >
+                <Pencil className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(project);
+                }}
+                aria-label={`Delete ${project.title}`}
+                className="w-9 h-9 inline-flex items-center justify-center rounded-lg text-ink-3 hover:text-alert-red hover:bg-white/[0.06] active:scale-95 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-alert-red disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                title="Delete project"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Status Select Pill */}
+            <div className="relative inline-flex items-center">
+              <span
+                aria-hidden="true"
+                style={{ fontSize: 'max(12px, calc(12 * var(--u, 1px)))' }}
+                className={`inline-flex items-center gap-1.5 font-semibold rounded-full border px-2.5 py-1 pointer-events-none transition-colors ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                <span>{statusConfig.label}</span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+              </span>
+              <select
+                value={project.status}
+                disabled={isUpdating}
+                onChange={(e) => handleStatusChange(e.target.value as ProjectStatus)}
+                aria-label={`Change status for ${project.title}`}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              >
+                <option value="active" className="bg-[#0B1020] text-[#FFF6EA]">Active</option>
+                <option value="completed" className="bg-[#0B1020] text-[#FFF6EA]">Completed</option>
+                <option value="on_hold" className="bg-[#0B1020] text-[#FFF6EA]">On hold</option>
+              </select>
+              {isUpdating && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-accent ml-1.5" />
+              )}
+            </div>
           </div>
         </div>
 

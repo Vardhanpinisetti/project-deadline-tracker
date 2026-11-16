@@ -11,13 +11,14 @@ import { Footer } from '../components/layout/Footer';
 import { StatusFilterTabs } from '../components/StatusFilterTabs';
 import { ProjectCard } from '../components/ProjectCard';
 import { ProjectModal } from '../components/ProjectModal';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { CardSkeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ToastContainer, ToastMessage } from '../components/Toast';
 import { Button } from '../components/Button';
 import { OrbitErrorBoundary } from '../components/orbit/ErrorBoundary';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { CreateProjectDTO, ProjectStatus } from '../types';
+import { CreateProjectDTO, UpdateProjectDTO, Project, ProjectStatus } from '../types';
 
 // Lazy-load 3D Orbit Scene
 const OrbitScene = lazy(() => import('../components/orbit/OrbitScene'));
@@ -34,12 +35,17 @@ export const ProjectsPage: React.FC = () => {
     fetchProjects,
     updateProjectStatus,
     addProject,
+    editProject,
+    deleteProject,
   } = useProjects();
 
   const scrollState = useScrollProgress();
   const [reduceEffects, setReduceEffects] = useReducedEffects();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [hoveredProjectId, setHoveredProjectId] = useState<number | null>(null);
 
@@ -73,7 +79,7 @@ export const ProjectsPage: React.FC = () => {
     return () => observer.disconnect();
   }, [reduceEffects, projects, loading]);
 
-  const addToast = (type: 'success' | 'error', message: string) => {
+  const addToast = (type: 'success' | 'error' | 'info', message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setToasts((prev) => [...prev, { id, type, message }]);
   };
@@ -95,6 +101,28 @@ export const ProjectsPage: React.FC = () => {
   const handleCreateProject = async (data: CreateProjectDTO) => {
     await addProject(data);
     addToast('success', `Project "${data.title}" successfully created!`);
+  };
+
+  const handleEditProject = async (id: number, data: UpdateProjectDTO) => {
+    await editProject(id, data);
+    addToast('success', 'Project updated');
+  };
+
+  const handleConfirmDelete = async (project: Project) => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteProject(project.id);
+      setDeletingProject(null);
+      if (result.success) {
+        addToast('success', 'Project deleted');
+      } else if (result.notFound) {
+        addToast('info', `Project '${project.title}' was already deleted.`);
+      } else {
+        addToast('error', result.error || 'Failed to delete project.');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -235,6 +263,8 @@ export const ProjectsPage: React.FC = () => {
                       key={project.id}
                       project={project}
                       onStatusChange={handleStatusChange}
+                      onEdit={(p) => setEditingProject(p)}
+                      onDelete={(p) => setDeletingProject(p)}
                       onHover={setHoveredProjectId}
                     />
                   ))}
@@ -265,11 +295,30 @@ export const ProjectsPage: React.FC = () => {
         {reduceEffects ? 'Enable effects' : 'Reduce effects'}
       </button>
 
-      {/* Add Project Modal */}
+      {/* Create Project Modal */}
       <ProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateProject}
+        mode="create"
+        onSubmitCreate={handleCreateProject}
+      />
+
+      {/* Edit Project Modal */}
+      <ProjectModal
+        isOpen={Boolean(editingProject)}
+        onClose={() => setEditingProject(null)}
+        mode="edit"
+        initialProject={editingProject}
+        onSubmitEdit={handleEditProject}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deletingProject)}
+        project={deletingProject}
+        onClose={() => setDeletingProject(null)}
+        onConfirm={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
 
       {/* Toast Notifications */}

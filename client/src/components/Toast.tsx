@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'info';
   message: string;
 }
 
@@ -37,19 +37,24 @@ const ToastItem: React.FC<{
   }, [toast.id, onDismiss]);
 
   const isSuccess = toast.type === 'success';
+  const isInfo = toast.type === 'info';
+
+  const borderClass = isSuccess
+    ? 'border-l-4 border-l-[#35D49A] text-[#FFF6EA]'
+    : isInfo
+    ? 'border-l-4 border-l-[#5B93FF] text-[#FFF6EA]'
+    : 'border-l-4 border-l-alert-red text-[#FFF6EA]';
 
   return (
     <div
       role="status"
-      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl solar-glass bg-[#0B1020]/95 shadow-solar-card transition-all duration-150 ease-out animate-slide-in ${
-        isSuccess
-          ? 'border-l-4 border-l-[#35D49A] text-[#FFF6EA]'
-          : 'border-l-4 border-l-alert-red text-[#FFF6EA]'
-      }`}
+      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl solar-glass bg-[#0B1020]/95 shadow-solar-card transition-all duration-150 ease-out animate-slide-in ${borderClass}`}
     >
       <div className="shrink-0 mt-0.5">
         {isSuccess ? (
           <CheckCircle2 className="w-5 h-5 text-[#35D49A]" />
+        ) : isInfo ? (
+          <Info className="w-5 h-5 text-[#5B93FF]" />
         ) : (
           <AlertTriangle className="w-5 h-5 text-alert-red" />
         )}

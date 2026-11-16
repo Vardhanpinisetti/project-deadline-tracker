@@ -1,20 +1,75 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CreateProjectDTO, ProjectStatus, ValidationErrorDetail } from '../types';
+import { CreateProjectDTO, UpdateProjectDTO, Project, ProjectStatus, ValidationErrorDetail } from '../types';
 import { ApiError } from '../lib/api';
 import { Button } from './Button';
 import { X, AlertTriangle, Calendar } from 'lucide-react';
 
-interface ProjectModalProps {
+export function buildPatchPayload(
+  initial: {
+    title: string;
+    status: ProjectStatus;
+    deadline: string | null;
+    budget: number;
+    spentAmount: number;
+  },
+  current: {
+    title: string;
+    status: ProjectStatus;
+    deadline: string;
+    budget: string;
+    spentAmount: string;
+  }
+): Partial<CreateProjectDTO> {
+  const patch: Partial<CreateProjectDTO> = {};
+
+  if (current.title.trim() !== initial.title.trim()) {
+    patch.title = current.title.trim();
+  }
+  if (current.status !== initial.status) {
+    patch.status = current.status;
+  }
+
+  const currentDeadline = current.deadline.trim() ? current.deadline.trim() : null;
+  const initialDeadline = initial.deadline ? initial.deadline.trim() : null;
+  if (currentDeadline !== initialDeadline) {
+    patch.deadline = currentDeadline;
+  }
+
+  const currentBudget = current.budget.trim() === '' ? NaN : Number(current.budget);
+  if (currentBudget !== initial.budget) {
+    patch.budget = currentBudget;
+  }
+
+  const currentSpent = current.spentAmount.trim() === '' ? NaN : Number(current.spentAmount);
+  if (currentSpent !== initial.spentAmount) {
+    patch.spentAmount = currentSpent;
+  }
+
+  return patch;
+}
+
+export interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateProjectDTO) => Promise<void>;
+  mode?: 'create' | 'edit';
+  initialProject?: Project | null;
+  onSubmitCreate?: (data: CreateProjectDTO) => Promise<void>;
+  onSubmitEdit?: (id: number, data: UpdateProjectDTO) => Promise<void>;
+  // For backwards compatibility:
+  onSubmit?: (data: CreateProjectDTO) => Promise<void>;
 }
 
 export const ProjectModal: React.FC<ProjectModalProps> = ({
   isOpen,
   onClose,
+  mode = 'create',
+  initialProject = null,
+  onSubmitCreate,
+  onSubmitEdit,
   onSubmit,
 }) => {
+  const isEditMode = mode === 'edit' && initialProject !== null;
+
   const [title, setTitle] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
   const [deadline, setDeadline] = useState('');
@@ -28,14 +83,22 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset form when modal opens
+  // Reset or pre-fill form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
-      setStatus('active');
-      setDeadline('');
-      setBudget('');
-      setSpentAmount('0');
+      if (isEditMode && initialProject) {
+        setTitle(initialProject.title);
+        setStatus(initialProject.status);
+        setDeadline(initialProject.deadline || '');
+        setBudget(String(initialProject.budget));
+        setSpentAmount(String(initialProject.spentAmount));
+      } else {
+        setTitle('');
+        setStatus('active');
+        setDeadline('');
+        setBudget('');
+        setSpentAmount('0');
+      }
       setFieldErrors({});
       setSummaryError(null);
       setLoading(false);
@@ -44,7 +107,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         titleInputRef.current?.focus();
       }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode, initialProject]);
 
   // Focus trap and Esc key handler
   useEffect(() => {
@@ -87,22 +150,47 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     setSummaryError(null);
     setLoading(true);
 
-    const budgetNum = budget.trim() === '' ? NaN : Number(budget);
-    const spentNum = spentAmount.trim() === '' ? NaN : Number(spentAmount);
-
-    const payload: CreateProjectDTO = {
-      title,
-      status,
-      deadline: deadline.trim() ? deadline.trim() : null,
-      budget: budgetNum,
-      spentAmount: spentNum,
-    };
-
     try {
-      await onSubmit(payload);
+      if (isEditMode && initialProject) {
+        // Build PATCH payload containing ONLY the fields that changed
+        const patch = buildPatchPayload(initialProject, {
+          title,
+          status,
+          deadline,
+          budget,
+          spentAmount,
+        });
+
+        // If no fields changed, simply close modal
+        if (Object.keys(patch).length === 0) {
+          onClose();
+          return;
+        }
+
+        if (onSubmitEdit) {
+          await onSubmitEdit(initialProject.id, patch);
+        }
+      } else {
+        const budgetNum = budget.trim() === '' ? NaN : Number(budget);
+        const spentNum = spentAmount.trim() === '' ? NaN : Number(spentAmount);
+
+        const payload: CreateProjectDTO = {
+          title: title.trim(),
+          status,
+          deadline: deadline.trim() ? deadline.trim() : null,
+          budget: budgetNum,
+          spentAmount: spentNum,
+        };
+
+        const createFn = onSubmitCreate || onSubmit;
+        if (createFn) {
+          await createFn(payload);
+        }
+      }
+
       onClose();
     } catch (err: unknown) {
-      // Do not close the modal on error
+      // Keep modal open on error, display summary and field errors
       if (err instanceof ApiError) {
         const errors: Record<string, string> = {};
         if (err.details && Array.isArray(err.details)) {
@@ -111,11 +199,13 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           });
         }
         setFieldErrors(errors);
-        setSummaryError(err.message || 'Validation failed. Please correct the highlighted errors.');
+        setSummaryError(
+          err.message || 'Validation failed. Please correct the highlighted errors.'
+        );
       } else if (err instanceof Error) {
         setSummaryError(err.message);
       } else {
-        setSummaryError('Failed to create project. Please try again.');
+        setSummaryError('Failed to save project. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -126,7 +216,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !loading) onClose();
       }}
     >
       <div
@@ -140,15 +230,19 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         <div className="flex items-center justify-between pb-4 border-b border-[rgba(255,180,84,0.14)]">
           <div>
             <h2 id="modal-title" className="text-lg font-semibold text-[#FFF6EA] tracking-tight">
-              Create New Project
+              {isEditMode ? 'Edit project' : 'Create New Project'}
             </h2>
             <p className="text-xs text-muted mt-0.5">
-              Enter the project details, timeline, and allocated budget.
+              {isEditMode
+                ? 'Update the project details, timeline, or allocated budget.'
+                : 'Enter the project details, timeline, and allocated budget.'}
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 text-muted hover:text-[#FFF6EA] rounded-xl hover:bg-white/[0.05] transition-colors"
+            disabled={loading}
+            className="p-2 text-muted hover:text-[#FFF6EA] rounded-xl hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -182,7 +276,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {/* Title */}
           <div className="space-y-1.5 text-left">
-            <label htmlFor="modal-title-input" className="block text-xs uppercase tracking-wider font-semibold text-muted">
+            <label
+              htmlFor="modal-title-input"
+              className="block text-xs uppercase tracking-wider font-semibold text-muted"
+            >
               Project Title
             </label>
             <input
@@ -202,7 +299,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               aria-describedby={fieldErrors.title ? 'modal-title-error' : undefined}
             />
             {fieldErrors.title && (
-              <p id="modal-title-error" role="alert" aria-live="polite" className="text-xs text-alert-red font-medium flex items-center gap-1.5">
+              <p
+                id="modal-title-error"
+                role="alert"
+                aria-live="polite"
+                className="text-xs text-alert-red font-medium flex items-center gap-1.5"
+              >
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                 <span>{fieldErrors.title}</span>
               </p>
@@ -212,8 +314,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           {/* Status & Deadline Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 text-left">
-              <label htmlFor="modal-status-select" className="block text-xs uppercase tracking-wider font-semibold text-muted">
-                Initial Status
+              <label
+                htmlFor="modal-status-select"
+                className="block text-xs uppercase tracking-wider font-semibold text-muted"
+              >
+                Status
               </label>
               <select
                 id="modal-status-select"
@@ -230,7 +335,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 <option value="on_hold" className="bg-[#0B1020] text-[#FFF6EA]">On hold</option>
               </select>
               {fieldErrors.status && (
-                <p role="alert" aria-live="polite" className="text-xs text-alert-red font-medium flex items-center gap-1.5">
+                <p
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-alert-red font-medium flex items-center gap-1.5"
+                >
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span>{fieldErrors.status}</span>
                 </p>
@@ -239,7 +348,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
 
             <div className="space-y-1.5 text-left">
               <div className="flex items-center justify-between">
-                <label htmlFor="modal-deadline-input" className="block text-xs uppercase tracking-wider font-semibold text-muted">
+                <label
+                  htmlFor="modal-deadline-input"
+                  className="block text-xs uppercase tracking-wider font-semibold text-muted"
+                >
                   Deadline
                 </label>
                 {deadline && (
@@ -265,7 +377,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 aria-invalid={Boolean(fieldErrors.deadline)}
               />
               {fieldErrors.deadline ? (
-                <p role="alert" aria-live="polite" className="text-xs text-alert-red font-medium flex items-center gap-1.5">
+                <p
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-alert-red font-medium flex items-center gap-1.5"
+                >
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span>{fieldErrors.deadline}</span>
                 </p>
@@ -281,7 +397,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
           {/* Budget & Spent Amount Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 text-left">
-              <label htmlFor="modal-budget-input" className="block text-xs uppercase tracking-wider font-semibold text-muted">
+              <label
+                htmlFor="modal-budget-input"
+                className="block text-xs uppercase tracking-wider font-semibold text-muted"
+              >
                 Budget (₹ INR)
               </label>
               <input
@@ -301,7 +420,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 aria-invalid={Boolean(fieldErrors.budget)}
               />
               {fieldErrors.budget && (
-                <p role="alert" aria-live="polite" className="text-xs text-alert-red font-medium flex items-center gap-1.5">
+                <p
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-alert-red font-medium flex items-center gap-1.5"
+                >
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span>{fieldErrors.budget}</span>
                 </p>
@@ -309,7 +432,10 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
             </div>
 
             <div className="space-y-1.5 text-left">
-              <label htmlFor="modal-spent-input" className="block text-xs uppercase tracking-wider font-semibold text-muted">
+              <label
+                htmlFor="modal-spent-input"
+                className="block text-xs uppercase tracking-wider font-semibold text-muted"
+              >
                 Spent Amount (₹ INR)
               </label>
               <input
@@ -329,7 +455,11 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                 aria-invalid={Boolean(fieldErrors.spentAmount)}
               />
               {fieldErrors.spentAmount && (
-                <p role="alert" aria-live="polite" className="text-xs text-alert-red font-medium flex items-center gap-1.5">
+                <p
+                  role="alert"
+                  aria-live="polite"
+                  className="text-xs text-alert-red font-medium flex items-center gap-1.5"
+                >
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                   <span>{fieldErrors.spentAmount}</span>
                 </p>
@@ -352,7 +482,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               variant="primary"
               loading={loading}
             >
-              Create Project
+              {isEditMode ? 'Save changes' : 'Create Project'}
             </Button>
           </div>
         </form>

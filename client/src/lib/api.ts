@@ -1,4 +1,4 @@
-import { ApiErrorResponse, CreateProjectDTO, Project, ProjectStatus, ValidationErrorDetail } from '../types';
+import { ApiErrorResponse, CreateProjectDTO, UpdateProjectDTO, Project, ProjectStatus, ValidationErrorDetail } from '../types';
 
 // Use relative URLs ("/api/projects") by default; only use VITE_API_URL if it is set
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
@@ -76,5 +76,36 @@ export const api = {
       body: JSON.stringify({ status }),
     });
     return handleResponse<Project>(res);
+  },
+
+  /**
+   * PATCH /api/projects/:id
+   */
+  async updateProject(id: number, data: UpdateProjectDTO): Promise<Project> {
+    const res = await fetch(`${API_BASE_URL}/api/projects/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<Project>(res);
+  },
+
+  /**
+   * DELETE /api/projects/:id
+   */
+  async deleteProject(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE_URL}/api/projects/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    if (res.status === 204) {
+      return;
+    }
+    return handleResponse<void>(res);
   },
 };
