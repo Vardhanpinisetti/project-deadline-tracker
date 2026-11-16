@@ -1,81 +1,107 @@
 # Project Deadline Tracker
 
-A minimal, production-grade full-stack project tracking application built for the EnvisionStudio assessment.
-
----
-
 ## 1. How to Run Locally
 
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
 
-### Environment Variables
-Both backend and frontend come pre-configured with default fallbacks so the app runs out-of-the-box with no `.env` files required. Template files are provided:
+### Environment Variables & Ports
+Both the server and client run out-of-the-box with zero configuration required. The default values are:
+- **Server** (runs on `http://localhost:4000`):
+  - `PORT=4000`
+  - `DB_PATH=./data/projects.db`
+  - `CLIENT_ORIGIN=http://localhost:5173,http://localhost:5174`
+- **Client** (runs on `http://localhost:5173`, with automatic `/api` dev proxy to `http://localhost:4000`):
+  - `VITE_API_URL=` (defaults to relative `/api/projects`)
 
-- **Server (`server/.env.example` / `server/.env`)**:
-  ```env
-  PORT=4000
-  DB_PATH=./data/projects.db
-  CLIENT_ORIGIN=http://localhost:5173
-  ```
-- **Client (`client/.env.example` / `client/.env`)**:
-  ```env
-  VITE_API_URL=http://localhost:4000
-  ```
+### Exact Commands
 
-### Installation & Launch
-
-1. **Install dependencies** across root, server, and client:
+1. **Install all dependencies** (root, server, and client):
    ```bash
    npm run install:all
    ```
 
-2. **Start backend and frontend concurrently**:
+2. **Start the application** (runs server on `:4000` and client on `:5173` concurrently):
    ```bash
    npm run dev
    ```
-   - Server runs on: `http://localhost:4000`
-   - Client runs on: `http://localhost:5173` (navigating to `/` redirects to `/projects`)
+   Navigate to `http://localhost:5173/projects` in your browser.
 
 3. **Run automated test suites** (server Supertest + client Vitest):
    ```bash
    npm test
    ```
 
+4. **Build production bundles**:
+   ```bash
+   npm run build
+   ```
+
 ### How Seeding Works
-- On initial launch, the server checks if the SQLite `projects` table is empty.
-- If empty, it seeds the 5 assessment projects within an atomic transaction.
-- Seeding is strictly **idempotent**: restarting the application will never duplicate or alter existing rows.
-- To manually re-seed or reset the database at any time:
-  ```bash
-  npm run seed
-  ```
-  *(Or force a clean wipe and re-seed: `npm --prefix server run seed -- --force`).*
+- The application uses SQLite `PRAGMA user_version` to track initialization.
+- When the database file is first created (`user_version = 0`), the server automatically seeds the 5 initial assessment projects and advances `user_version` to 1.
+- If all projects are deleted, restarting the server **never re-seeds**, keeping the database empty as expected.
+- To manually reset or re-seed the database at any time:
+   ```bash
+   npm run seed
+   ```
+   *(Or force a clean wipe and re-seed: `npm --prefix server run seed -- --force`).*
+
+---
+
+### Output Screenshots & Detailed Walkthrough
+
+#### 1. Desktop Dashboard & Cinematic Hero (1440×900)
+![Desktop Dashboard](screenshots/desktop-1440x900.png)
+*Figure 1: The Solar Gold desktop dashboard at 1440×900 viewport. Shows the fixed 4-layer scene stack, the ambient celestial sun and planetary orbit visualization, live navigation bar with active section indicators, and the prominent "+ New project" action button.*
+
+#### 2. Project List, Live Badges & Card Actions
+![Project Cards Stack](screenshots/projects-list.png)
+*Figure 2: The active project cards stack sorted by nearest deadline first with null deadlines last. Shows all business rule badge states:*
+- **"Internal HR Dashboard"**: Overdue badge displayed because its deadline (`2026-09-30`) is in the past.
+- **"Brand Identity for Startup"**: Completed project with exact budget spent, displaying the neutral "Budget fully used" badge.
+- **"Mobile App for Fitness Tracking"**: Active project with over-budget warning badge (`+₹20,000`) and red progress bar fill.
+- **"Portfolio Website"**: Project with no deadline showing the italic "No deadline" indicator and over-budget badge.
+- **Card Action Buttons**: Each card features accessible 36px touch targets for inline Status Select, Edit (pencil), and Delete (trash).
+
+#### 3. Add & Edit Project Modal with Server Validation
+![Modal Validation Error](screenshots/modal-validation.png)
+*Figure 3: Shared project form modal demonstrating real-time server error handling. Submitting invalid inputs (empty title, negative budget, invalid calendar date) preserves modal state, displays a top summary banner, and highlights each failing input with readable error messages.*
+
+#### 4. Delete Confirmation Dialog
+![Delete Confirmation Dialog](screenshots/delete-dialog.png)
+*Figure 4: Accessible glass confirmation dialog for destructive actions. Features trapped focus, initial focus on Cancel, double-click protection, and optimistic deletion with automatic rollback if an error occurs.*
+
+#### 5. Mobile Responsive View (375×844)
+![Mobile Dashboard](screenshots/mobile-375x844.png)
+![Mobile Cards View](screenshots/mobile-cards-375x844.png)
+*Figures 5 & 6: Mobile viewport rendering at 375×844. Verified with zero horizontal scroll (`scrollWidth === clientWidth`), touch-friendly targets (36px+), readable typography, and card action buttons always visible.*
 
 ---
 
 ## 2. Stack Choice
 
-- **Backend (Node.js + Express + TypeScript)**: Delivers a clean, layered REST architecture (routes -> controllers -> services -> validators) with type safety across API boundaries.
-- **Database (SQLite via better-sqlite3 with zero-dependency fallback)**: Zero-setup persistent file database with high-performance WAL mode and strict table-level `CHECK` constraints.
+- **Backend (Node.js + Express + TypeScript)**: Delivers a clean, layered REST architecture (routes → controllers → services → validators) with end-to-end type safety.
+- **Database (SQLite via better-sqlite3 with node:sqlite fallback)**: Zero-setup persistent file database with high-performance WAL mode and strict table-level `CHECK` constraints.
 - **Validation (Zod)**: Acts as the single source of truth for runtime validation, guaranteeing non-empty trimmed titles, calendar-accurate dates, non-negative numbers, and structured HTTP 400 error payloads.
-- **Frontend (React + Vite + TypeScript + Tailwind CSS)**: Sub-millisecond HMR, clean hook architecture (`useProjects`), accessible modal interactions, and Solar Gold design system without bloated UI libraries.
-- **Three.js (Optional Orbit Visual)**: Lightweight, lazy-loaded 3D visualization that renders as an optional decoration and never blocks or affects core app functionality.
+- **Frontend (React + Vite + TypeScript + Tailwind CSS)**: Sub-millisecond HMR, clean hook architecture (`useProjects`), accessible modals, and Solar Gold design system without bloated UI libraries.
+- **Three.js (Optional Orbit Visual)**: Lightweight, lazy-loaded 3D visualization that renders as an optional decoration and never blocks or affects core app functionality; the app works completely without it.
 
-Edit and delete were added beyond the three required endpoints, because a real tracker needs them.
-
----
-
-## 3. Decision 1: Tasks Model
-
-I choose Option B (a separate Task table with a `projectId` reference) because tasks will grow in volume and require independent querying, updating, and pagination without rewriting the whole project record and hitting document size limits.
+Overdue status depends on today's date, so the live Overdue count changes as dates pass.
+Edit and delete were added beyond the three required endpoints on purpose, because a real tracker needs them.
 
 ---
 
-## 4. Decision 2: Sort Order
+## 3. Decision 1 — Tasks Model
 
-I chose nearest deadline first with null deadlines last, because a deadline tracker should surface the most time-critical work first so teams can immediately prioritize urgent work.
+Option B (separate Task table with a projectId reference), because tasks will grow and need independent querying, updating and pagination without rewriting the whole project record.
+
+---
+
+## 4. Decision 2 — Sort Order
+
+Nearest deadline first with null deadlines last, because a deadline tracker should surface the most time-critical work first.
 
 ---
 
@@ -88,23 +114,13 @@ function isOverdue(project) {
 }
 ```
 
-- **Bug 1 (Timezone Handling)**: A date-only string like `"2026-12-15"` is parsed by ECMAScript as UTC midnight (`00:00:00Z`), while `new Date()` evaluates against current local time; consequently, the result shifts by timezone and a project due today can be wrongly flagged as overdue hours before the day ends. Date-only values must be compared in a consistent local timezone without UTC parsing.
-- **Bug 2 (Missing Data Handling)**: `new Date(null)` evaluates to the Unix Epoch (`1970-01-01`), meaning an open project with a null deadline is wrongly flagged as overdue, whereas `undefined` or malformed strings produce `Invalid Date`, which silently returns `false` in comparison operators and hides corrupted data; an explicit null and validity check is required.
-- **Exact-Budget Decision**: When `spentAmount === budget`, the project is considered within budget (budget fully used, not exceeded), displayed with a neutral badge rather than a red alert.
+- **Bug 1 (Timezone)**: A date-only string such as `"2026-12-15"` is parsed by ECMAScript as UTC midnight (`00:00:00Z`), while `new Date()` evaluates against current local time; consequently, the result shifts with the user's timezone and a project due today can be flagged wrongly.
+- **Bug 2 (Missing Data)**: `new Date(null)` evaluates to the Unix Epoch (`1970-01-01`), so a null deadline is wrongly reported as overdue, and `new Date(undefined)` or an invalid string gives `Invalid Date`, where the comparison silently returns false and hides bad data; an explicit null/validity check is needed.
+
+Spent amount equal to budget is within budget (budget fully used, not exceeded).
 
 ---
 
 ## 6. AI Usage
 
-I used AI assistance (Antigravity with Gemini and Claude) for rapid monorepo scaffolding, boilerplate generation, and Three.js orbit scene geometry setups; I manually reviewed and verified all date-only timezone comparisons, budget limit edge cases, Zod schemas, SQL prepared statements, and test suites across all endpoints.
-
----
-
-## 7. Cinematic Scroll Architecture
-
-- **Scaling System (`--u`)**: Computes a dynamic viewport unit (`1u = clientWidth / 1440` on >820px, `clientWidth / 390` on <=820px) keeping design proportions consistent across desktop and mobile screens.
-- **Fixed SceneStack**: 4 full-viewport background layers (Day plate with radial glow fallback, Ember gradient, Night plate with procedural stars, and WebGL Three.js Orbit canvas) seamlessly crossfading via scroll progress.
-- **5-Pose Orbit Choreography**: Three.js planetary orbit glides between 5 key poses across sections (`hero`, `overview`, `projects`, `orbit`, `end`) using smooth `easeInOutCubic` interpolation, scroll velocity acceleration, and subtle pointer parallax.
-- **Hero Ripple Lens**: WebGL 1 shader pipeline with chromatic aberration and pointer presence easing, with graceful fallback to day plate when media is omitted.
-- **Accessibility & Performance**: Full support for `prefers-reduced-motion` and a persistent "Reduce effects" toggle that disables WebGL loops and snaps animations to static readable states. All core tracker functions (CRUD, validation, filters, optimistic updates) remain 100% accessible.
-
+[tools I used: Claude for design exploration and prompts, Antigravity for code generation]; [what I asked them to generate]; [what I manually reviewed and verified: validation rules, the overdue and budget logic, SQL queries, the tests, the edge cases]; [what I changed myself].
