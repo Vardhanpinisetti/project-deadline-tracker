@@ -1,18 +1,169 @@
+@import '@fontsource-variable/inter-tight';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource/fira-code/400.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --u: 1px;
+  --bg: #05060B;
+  --ink: #FFF6EA;
+  --ink-2: rgba(255, 246, 234, 0.72);
+  --ink-3: rgba(230, 214, 190, 0.5);
+  --acc: #FFB454;
+  --acc-2: #FF7A59;
+  --acc-text: #FFC278;
+  --red: #FF4D5E;
+  --line: rgba(255, 180, 84, 0.15);
+}
+
 @layer base {
   body {
-    background: radial-gradient(900px 600px at 78% 45%, rgba(255, 180, 84, 0.22), transparent), #05060B;
-    color: #FFF6EA;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    color: #FFF6EA;
+    color: var(--ink);
+  }
+}
+
+/* Glass surface design token */
+.solar-glass {
+  background: linear-gradient(160deg, rgba(255, 180, 84, 0.12), rgba(120, 60, 20, 0.08));
+  border: 1px solid rgba(255, 200, 140, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 calc(24 * var(--u, 1px)) calc(60 * var(--u, 1px)) rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  border-radius: calc(18 * var(--u, 1px));
+}
+
+@media (max-width: 820px) {
+  .solar-glass {
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 40px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* Headline Typography Style */
+.solar-headline {
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.028em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.solar-serif-accent {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--acc-text);
+}
+
+.solar-fira-num {
+  font-family: 'Fira Code', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Primary Button: height 49u, padding 0 18u, radius 11u, glow, hover lifts 2u */
+.solar-btn-primary {
+  height: calc(49 * var(--u, 1px));
+  padding: 0 calc(18 * var(--u, 1px));
+  border-radius: calc(11 * var(--u, 1px));
+  background: linear-gradient(135deg, #FFB454 0%, #FF7A59 100%) !important;
+  color: #05060B !important;
+  font-weight: 500 !important;
+  box-shadow: 0 calc(8 * var(--u, 1px)) calc(26 * var(--u, 1px)) rgba(255, 150, 70, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u, 1px));
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.solar-btn-primary:hover {
+  transform: translateY(calc(-2 * var(--u, 1px)));
+  filter: brightness(1.05);
+}
+
+.solar-btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+@media (max-width: 820px) {
+  .solar-btn-primary {
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 11px;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(255, 150, 70, 0.35);
+  }
+}
+
+/* Ghost Button: 1px border rgba(255,240,220,.4), transparent, hover rgba(255,255,255,.1) */
+.solar-btn-ghost {
+  height: calc(49 * var(--u, 1px));
+  padding: 0 calc(18 * var(--u, 1px));
+  border-radius: calc(11 * var(--u, 1px));
+  border: 1px solid rgba(255, 240, 220, 0.4);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 500;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u, 1px));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.solar-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 240, 220, 0.6);
+}
+
+@media (max-width: 820px) {
+  .solar-btn-ghost {
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 11px;
+    gap: 8px;
+  }
+}
+
+/* Chip: Fira Code 11u, height 24u, padding 0 9u, radius 6u */
+.solar-chip {
+  font-family: 'Fira Code', monospace;
+  font-size: calc(11 * var(--u, 1px));
+  height: calc(24 * var(--u, 1px));
+  padding: 0 calc(9 * var(--u, 1px));
+  border-radius: calc(6 * var(--u, 1px));
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--u, 1px));
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .solar-chip {
+    font-size: 11px;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: 6px;
   }
 }
 
@@ -20,88 +171,87 @@
 .card-project-title {
   color: #FFF6EA !important;
   font-weight: 600 !important;
-  font-size: 17px !important;
+  font-size: calc(17 * var(--u, 1px)) !important;
   line-height: 1.35 !important;
   letter-spacing: -0.015em !important;
 }
 
-/* Solar Gold radial glow background utility */
-.bg-solar-glow {
-  background-image: radial-gradient(900px 600px at 78% 45%, rgba(255, 180, 84, 0.22), transparent);
+@media (max-width: 820px) {
+  .card-project-title {
+    font-size: 17px !important;
+  }
 }
 
-/* Solar Glass Surface style: backdrop blur(20px) saturate(140%), inset highlight */
-.solar-glass {
-  background-color: rgba(24, 18, 12, 0.6);
-  border: 1px solid rgba(255, 180, 84, 0.22);
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-}
-
-/* Stacked card warm hover effect */
+/* Stacked card warm hover effect (lift 6u) */
 .solar-glass-hover {
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.3s ease;
 }
 
 .solar-glass-hover:hover {
   border-color: rgba(255, 180, 84, 0.45);
-  transform: translateX(6px);
+  transform: translateY(calc(-6 * var(--u, 1px)));
 }
 
-/* Brand gradient dot */
-.solar-brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #FF7A59, #FFB454);
-  display: inline-block;
-  box-shadow: 0 0 12px rgba(255, 122, 89, 0.6);
+@media (max-width: 820px) {
+  .solar-glass-hover:hover {
+    transform: translateY(-4px);
+  }
 }
 
-/* Primary Button & Active Pill Solar Gold Gradient */
-.solar-btn-primary {
-  background: linear-gradient(135deg, #FFB454 0%, #FF7A59 100%) !important;
-  color: #05060B !important;
-  font-weight: 600 !important;
-  box-shadow: 0 8px 28px rgba(255, 180, 84, 0.4);
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.solar-btn-primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
-}
-
-.solar-btn-primary:active {
-  transform: translateY(0);
-  filter: brightness(0.95);
-}
-
+/* Active filter pill */
 .solar-pill-active {
   background: linear-gradient(135deg, #FFB454 0%, #FF7A59 100%) !important;
   color: #05060B !important;
   font-weight: 600 !important;
 }
 
-/* Progress bar: 7px height, rgba(255,255,255,.07) background, gradient or red fill */
+/* Progress bar */
 .solar-progress-bar {
-  height: 7px;
+  height: calc(7 * var(--u, 1px));
   border-radius: 9999px;
   background-color: rgba(255, 255, 255, 0.07);
   overflow: hidden;
+}
+
+@media (max-width: 820px) {
+  .solar-progress-bar {
+    height: 7px;
+  }
 }
 
 .solar-progress-fill {
   height: 100%;
   border-radius: 9999px;
   background: linear-gradient(90deg, #FFB454, #FF7A59);
-  transition: width 0.2s ease-out;
+  transition: width 0.3s ease-out;
 }
 
 .solar-progress-fill.over-budget {
   background: #FF4D5E !important;
+}
+
+/* Scroll reveal mechanism */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(calc(36 * var(--u, 1px)));
+  transition: opacity 1s cubic-bezier(0.2, 0.7, 0.2, 1), transform 1s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal].in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 820px) {
+  [data-reveal] {
+    transform: translateY(24px);
+  }
+}
+
+/* Initial entrance animation class */
+html.anim [data-in] {
+  opacity: 0;
 }
 
 /* Subtle scrollbar */
@@ -133,5 +283,15 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
     transform: none !important;
+  }
+
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  html.anim [data-in] {
+    opacity: 1 !important;
   }
 }
